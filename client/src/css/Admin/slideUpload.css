@@ -1,0 +1,25 @@
+.slide-upload-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Space between cards */
+  }
+  
+  .slide-card {
+    box-shadow: 0px 2px 4px rgba(0,0,0,0.1); /* Material Design-like shadow */
+  }
+  
+  .slide-form .ant-form-item {
+    margin-bottom: 16px;
+  }
+  
+  .slide-image {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    margin-bottom: 16px;
+  }
+  
+  input[type="file"] {
+    margin-top: 8px;
+  }
+  

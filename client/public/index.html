@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="ssc.skru.ac.th/ssc.ico" />
+  <meta name="viewport" content="width=1024" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="Sparkling Science Center" content="ศูนย์บริการวิชาการ คณะวิทยาศาสตร์และเทคโนโลยี" />
+
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <link rel="apple-touch-icon" href="ssc.skru.ac.th/logo_ssc.svg" />
+  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <title>Sparkling Science Center, SKRU</title>
+  <script>
+    function isInAppBrowser() {
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      // Check if the user agent indicates the presence of an in-app browser
+      return /Line|FBAN|FBAV|Instagram|Twitter|FB_IAB|FB4A|FBAN_Messenger|FB_IOS/.test(ua);
+    }
+
+    function redirectToDefaultBrowser() {
+      if (isInAppBrowser()) {
+        // Display a message prompting the user to open in an external browser
+        alert("ท่านกำลังเข้าใช้เว็บไซต์ผ่าน in-app browser หากต้องการลงชื่อเข้าใช้เพื่อจองคอร์สอบรม กรุณากดปุ่ม 'สามจุด (...)' ที่มุมและเลือก 'เปิดในเบราว์เซอร์'");
+
+        // Try to prompt opening in the default browser
+        const currentUrl = ssc.skru.ac.th;
+        // You can use a fallback mechanism by prefixing with `http://` to suggest opening in the default browser
+        window.location.href = `http://${currentUrl}`;
+      }
+    }
+
+    // Run the function when the page loads
+    window.onload = redirectToDefaultBrowser;
+  </script>
+</head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5DG45NVKPN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-5DG45NVKPN');
+</script>
+
+<body>
+  <noscript>ศูนย์บริการวิขาการ คณะวิทยาศาสตร์และเทคโนโลยี</noscript>
+  <div id="root"></div>
+</body>
+
+</html>

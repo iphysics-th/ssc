@@ -1,0 +1,147 @@
+/* AppHeader.css */
+@media (min-width: 768px) {
+    .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #fff;
+        /* Adjust the background color as needed */
+        padding: 0 20px;
+        /* Adjust padding as needed */
+        box-shadow: 0 4px 5px rgba(0, 0, 0, 0.1);
+        /* Drop shadow */
+        position: sticky; /* Make the header sticky */
+        top: 0; /* Stick to the top */
+        z-index: 1000; /* Ensure it stays on top of other elements */
+        height: 100px;
+    }
+    
+    .logo-container-desktop {
+        flex-shrink: 0;
+        /* Prevent logo from shrinking */
+    }
+    
+    .logo-container-desktop a {
+        display: flex;
+        align-items: center;
+        height: 64px;
+        /* Set a fixed height */
+    }
+    
+    .logo {
+        height: 100%;
+        /* Use full height of the container */
+    }
+    
+    .menu-container {
+        display: flex;
+        align-items: flex-end;
+        flex-grow: 1;
+        /* Allow the menu container to grow */
+        justify-content: flex-end;
+        /* Align menu items to the right */
+    }
+
+.menu-desktop {
+        display: block;
+        /* Always show on larger screens */
+        width: 100%;
+        /* Take full width of the container */
+    }
+
+    .menu-mobile {
+        display: none;
+        /* Hide on larger screens */
+    }
+
+    .header-user-button {
+        color: #333;
+        font-weight: 500;
+    }
+
+    .header-user-button:hover,
+    .header-user-button:focus {
+        color: #1890ff;
+        background: transparent;
+    }
+
+    .header-username {
+        display: inline;
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+    
+    /* Responsive styles for smaller screens */
+    @media (max-width: 768px) {
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: #fff;
+            /* Adjust the background color as needed */
+            padding: 0 20px;
+            /* Adjust padding as needed */
+            box-shadow: 0 4px 5px rgba(0, 0, 0, 0.1);
+            /* Drop shadow */
+            position: sticky; /* Make the header sticky */
+            top: 0; /* Stick to the top */
+            z-index: 1000; /* Ensure it stays on top of other elements */
+            height: 100px;
+        }
+    
+        .logo-container-mobile {
+            flex-shrink: 0;
+            /* Prevent logo from shrinking */
+        }
+        
+        .logo-container-mobile a {
+            display: flex;
+            align-items: flex-start;
+            height: 64px;
+            /* Set a fixed height */
+        }
+        
+        .logo {
+            height: 100%;
+            /* Use full height of the container */
+        }
+        .logo-drawer {
+            display: flex;
+            align-items: center;
+            height: 64px;
+            /* Use full height of the container */
+        }
+        .menu-desktop {
+            display: none;
+            /* Hide the full menu */
+        }
+    
+        .menu-mobile {
+            display: block;
+            /* Show the hamburger menu */
+        }
+    
+        .menu-container .ant-menu {
+            display: flex;
+            flex-direction: column;
+            /* Stack menu items vertically */
+            align-items: flex-start;
+            /* Align menu items to the right */
+        }
+    
+        .menu-container .ant-menu-item {
+            text-align: flex-start;
+            /* Center align menu items */
+            padding: 10px 0;
+            /* Adjust padding as needed */
+            width: 100%;
+            /* Full width for each menu item */
+        }
+
+        .header-username {
+            display: none;
+        }
+    }

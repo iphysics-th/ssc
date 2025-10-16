@@ -1,0 +1,63 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;700&display=swap');
+
+/* Base container adjustments */
+.social-auth-container {
+    font-family: 'Prompt', sans-serif; /* Updated to use 'Prompt' */
+    max-width: 900px;
+    margin: 40px auto; /* Increased margin for better centering */
+    padding: 40px; /* Increased padding for more space */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Soft shadow for depth */
+    border-radius: 8px; /* Rounded corners for modern look */
+    background-color: #ffffff; /* Optional: for contrast against possibly dark backgrounds */
+}
+
+/* Panels layout */
+.auth-panels {
+    display: flex;
+    gap: 20px; /* Added gap for space between panels */
+}
+
+.left-panel, .right-panel {
+    flex: 1;
+}
+
+/* Typography adjustments */
+
+.left-panel h4 {
+    color: #333; /* Softer color for less strain */
+}
+
+.left-panel h3 {
+    color: #3a6dfa;
+    font-size: 28px; /* Slightly larger for emphasis */
+    margin: 20px 0; /* Adjusted margin for spacing */
+}
+
+.left-panel h4 {
+    font-size: 20px; /* Increased size for readability */
+    margin: 10px 0; /* Adjusted margin for better spacing */
+}
+
+/* Button styling */
+.form-action-buttons button {
+    font-size: 16px; /* Increased font size for readability */
+    padding: 10px 20px; /* More padding for a larger click area */
+    border-radius: 5px; /* Rounded corners for modern look */
+    transition: background-color 0.3s, transform 0.2s; /* Smooth transition for visual feedback */
+}
+
+.form-action-buttons button:hover {
+    transform: translateY(-2px); /* Subtle lift effect on hover */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2); /* Shadow for depth */
+}
+
+/* Logo adjustments for a modern look */
+.logo-container-mobile {
+    text-align: center;
+    margin-bottom: 30px; /* More space around logo */
+}
+
+.logo2 {
+    height: 120px; /* Adjusted for prominence */
+}

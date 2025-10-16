@@ -1,0 +1,44 @@
+/* STEMSSCDetail.css */
+
+.stem-ssc-detail {
+    max-width: 800px; /* Maximum width for readability */
+    margin: 0 auto; /* Center align the content */
+    padding: 20px; /* Padding around the content */
+  }
+  
+  .stem-ssc-detail h1 {
+    font-size: 2em; /* Large font for the title */
+    color: #003366; /* Dark blue color for the title */
+    margin-bottom: 20px; /* Space below the title */
+  }
+  
+  .stem-ssc-detail p {
+    font-size: 20px; /* Standard font size for text */
+    line-height: 1.6; /* Line height for readability */
+    color: #333; /* Dark grey color for text */
+    margin-bottom: 20px; /* Space below each paragraph */
+  }
+  
+  .stem-ssc-detail img {
+    max-width: 100%; /* Responsive image width */
+    height: auto; /* Auto height to maintain aspect ratio */
+    border-radius: 10px; /* Rounded corners for the image */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  }
+  
+  .stem-ssc-detail .button-group {
+    display: flex;
+    justify-content: center; /* Center align the buttons */
+    gap: 20px; /* Space between buttons */
+    margin-top: 30px; /* Space above the button group */
+  }
+  
+  .stem-ssc-detail .ant-btn-primary {
+    background-color: #0056b3; /* Blue background for primary button */
+    border-color: #0056b3; /* Blue border for primary button */
+  }
+  
+  .stem-ssc-detail .ant-btn {
+    font-weight: bold; /* Bold font for buttons */
+  }
+  

@@ -1,0 +1,128 @@
+/* ========== GENERAL STYLES ========== */
+
+.course-selection-container {
+  padding: 16px;
+  max-width: 100%;
+  margin: auto;
+}
+
+.section {
+  margin-bottom: 32px; /* optimal for desktop layout */
+}
+
+
+.course-selection-container h2 {
+  display: inline-block;
+  font-size: 20px;
+  text-align: left;
+  color: #003b72;
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+
+
+
+.student-info-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.student-info-box .count-box {
+  margin-right: 12px;
+  padding: 8px 16px;
+  background-color: #e6f7ff;
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: center;
+  min-width: 80px;
+  margin-bottom: 10px;
+}
+
+.calendar-alert {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.legend-box {
+  text-align: center;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+.legend-box span {
+  display: inline-block;
+  margin: 4px 10px;
+}
+
+.legend-box .legend-item {
+  padding: 2px 6px;
+  color: white;
+  border-radius: 4px;
+}
+
+.subject-card {
+  width: 100%;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.subject-card .ant-btn {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.course-selection-footer {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.reservation-number {
+  text-align: center;
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #1890ff;
+}
+
+.ant-modal .ant-input-number {
+  width: 100% !important;
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (max-width: 768px) {
+  .student-info-box {
+    flex-direction: column;
+  }
+
+  .course-selection-container h2 {
+    font-size: 16px;
+  }
+
+  .legend-box {
+    font-size: 13px;
+  }
+
+  .subject-card p {
+    font-size: 14px;
+  }
+}
+
+/* ========== CALENDAR RESPONSIVENESS ========== */
+/* Outer scrollable wrapper */
+.calendar-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Inner fixed-width calendar container */
+.calendar-fixed-width {
+  min-width: 800px;   /* Critical: prevents column wrap */
+  width: 800px;       /* Optional: can be min-width only */
+}
+

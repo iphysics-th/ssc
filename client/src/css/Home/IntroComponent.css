@@ -1,0 +1,36 @@
+.intro-container {
+    text-align: center;
+    margin: 50px 0;
+  }
+  
+  .pre-intro {
+    font-size: 1.25rem; /* Adjust size as needed */
+    position: relative;
+    display: inline-block;
+  }
+  
+  .pre-intro::before,
+  .pre-intro::after {
+    content: '';
+    position: absolute;
+    height: 2px;
+    width: 50px; /* Adjust line length as needed */
+    background-color: #000; /* Line color */
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  
+  .pre-intro::before {
+    left: -60px; /* Adjust spacing from text */
+  }
+  
+  .pre-intro::after {
+    right: -60px; /* Adjust spacing from text */
+  }
+  
+  .main-intro {
+    font-size: 2.5rem; /* Adjust size as needed */
+    font-weight: bold;
+    margin-top: 20px;
+  }
+  

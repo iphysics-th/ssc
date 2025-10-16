@@ -1,0 +1,82 @@
+/* Signup.css */
+.signup-container {
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.signup-title {
+    margin-bottom: 20px;
+    /* Adjust as needed */
+}
+
+.logo-container-mobile {
+    text-align: center;
+    /* Center the logo container if needed */
+    margin-bottom: 20px;
+    /* Add some space below the logo */
+}
+
+.logo-container-mobile a {
+    display: inline-block;
+    /* Adjust based on your layout */
+}
+
+.logo {
+    height: 64px;
+    /* Adjust based on your logo's size */
+}
+
+.signup-form label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.signup-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.signup-form .error {
+    border-color: red;
+}
+
+.input-feedback {
+    color: red;
+    margin-bottom: 15px;
+}
+
+.signup-form button {
+    width: 60%;
+    margin: 0 auto;
+    /* Center-align the button */
+    display: block;
+}
+
+.form-action-buttons {
+    margin-top: 20px;
+    /* Space above the action buttons */
+    width: 100%;
+    /* Ensure the container spans the full width of the form */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Center-align the content */
+    gap: 10px;
+}
+
+.signup-btn {
+    width: 100%;
+    margin-bottom: 10px;
+    /* Space between the signup button and Google login */
+}
+
+.social-login-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    /* Adjust the spacing between social login buttons if you have multiple */
+}

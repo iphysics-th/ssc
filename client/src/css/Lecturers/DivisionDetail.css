@@ -1,0 +1,107 @@
+@import 'https://fonts.googleapis.com/css?family=Kanit|Prompt';
+
+.division-detail {
+    font-family: 'Kanit', sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+    padding: 20px;
+}
+
+.division-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.division-header h1 {
+    font-size: 28px;
+    color: #13547e;
+    /* A color that matches your theme */
+}
+
+.lecturer-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Flexible initial setup */
+    gap: 40px;
+    padding: 0 5%;
+}
+
+@media screen and (min-width: 500px) {
+    .lecturer-list {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns for medium screens */
+    }
+}
+
+@media screen and (min-width: 768px) {
+    .lecturer-list {
+        grid-template-columns: repeat(3, 1fr); /* 3 columns for large screens */
+    }
+}
+
+@media screen and (min-width: 1024px) {
+    .lecturer-list {
+        grid-template-columns: repeat(4, 1fr); /* Maximum 4 columns for extra large screens */
+    }
+}
+
+.lecturer-item {
+    list-style-type: none;
+    text-align: center;
+    border-radius: 0px;
+    transition: box-shadow 0.3s ease; /* Smooth transition for shadow */
+    max-width: 500px; /* Fixed maximum width */
+    margin: auto; /* Center in grid cell */
+    box-shadow: 0 0px 0px rgba(0, 0, 0, 0.2); /* Initial box-shadow */
+}
+
+.lecturer-item:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Enhanced shadow on hover */
+}
+
+.lecturer-item img {
+    width: 100%; /* Full width of the container */
+    height: auto; /* Maintain aspect ratio */
+    aspect-ratio: 1 / 1; /* 3:4 aspect ratio */
+    object-fit: cover; /* Cover the area without distorting */
+    object-position: top; /* Align the top of the image */
+    max-width: 250px; /* Fixed maximum width */
+}
+
+.lecturer-name {
+    font-size: 22px;
+    color: #333;
+    margin-top: 20px;
+}
+
+
+
+.back-button {
+    background-color: #1d8ad3;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.back-button:hover {
+    background-color: #0094f7;
+}
+
+@media screen and (max-width: 768px) {
+    .lecturer-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .lecturer-list {
+        grid-template-columns: 1fr;
+    }
+
+    .division-header h1 {
+        font-size: 24px;
+    }
+}

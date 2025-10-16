@@ -1,0 +1,83 @@
+/* reservationData.css */
+
+.reservation-table-container {
+    padding: 20px;
+    background-color: #f0f2f5; /* Light grey background */
+  }
+  
+  .reservation-table-container h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #1890ff; /* Ant Design primary color */
+  }
+  
+  .ant-table {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .ant-table-thead > tr > th {
+    text-align: center;
+    background-color: #fafafa; /* Light grey header */
+    font-weight: bold;
+  }
+  
+  .ant-table-tbody > tr > td {
+    text-align: center;
+  }
+  
+  .ant-table-tbody > tr > td:last-child {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .ant-tag-green {
+    color: #fff;
+    background-color: #52c41a; /* Green tag for 'confirmed' */
+  }
+  
+  .ant-tag-orange {
+    color: #fff;
+    background-color: #faad14; /* Orange tag for 'processed' */
+  }
+  
+  .ant-tag-red {
+    color: #fff;
+    background-color: #ff4d4f; /* Red tag for 'received' */
+  }
+  
+  .ant-pagination {
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  @media (max-width: 768px) {
+    .reservation-table-container {
+      padding: 10px;
+    }
+  
+    .ant-table {
+      font-size: 12px;
+    }
+  
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+      padding: 6px 8px;
+      white-space: nowrap;
+    }
+  
+    .reservation-table-container h1 {
+      font-size: 20px;
+    }
+  }
+  
+  .reservation-table-scroll-wrapper {
+    overflow-x: auto;
+  }
+  
+  .ant-table-cell {
+    white-space: nowrap;
+  }
+  

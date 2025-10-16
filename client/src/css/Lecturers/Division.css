@@ -1,0 +1,75 @@
+@import 'https://fonts.googleapis.com/css?family=Kanit|Prompt';
+
+.division-page {
+    font-family: 'Kanit', sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    padding: 20px;
+    text-align: center;
+}
+
+.division-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 0 5%;
+}
+
+.division-box {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center the content */
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: box-shadow 0.3s ease; /* Smooth transition for shadow */
+}
+
+.division-box:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Enhanced shadow on hover */
+}
+
+.division-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-right: 20px;
+    object-fit: cover;
+}
+
+.division-text {
+    flex: 4; /* Four parts of the 5-column layout */
+    text-align: center; /* Center align text */
+}
+
+.division-text h2, .division-text h3, .division-text h4 {
+    margin: 0;
+    color: #13547e;
+    text-align: center;
+}
+
+.back-button-container {
+    text-align: left;
+    padding: 10px 20px;
+}
+
+
+@media screen and (min-width: 500px) {
+    .division-grid {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
+
+@media screen and (min-width: 1024px) {
+    .division-grid {
+        grid-template-columns: repeat(2, 2fr); /* Maximum 4 columns for extra large screens */
+    }
+}
+
+@media screen and (min-width: 2024px) {
+    .division-grid {
+        grid-template-columns: repeat(3, 3fr); /* Maximum 4 columns for extra large screens */
+    }
+}
+

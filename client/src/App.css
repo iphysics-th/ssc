@@ -1,0 +1,60 @@
+/* App.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;700&display=swap');
+
+/* Apply the 'Prompt' font to the body, Menu, and Footer */
+body, .ant-menu, .ant-layout-footer {
+  font-family: 'Prompt', sans-serif;
+}
+
+/* Customizing font sizes for heading levels */
+h1 {
+  font-size: 36px; /* Example size, adjust as needed */
+}
+
+h2 {
+  font-size: 30px; /* Example size, adjust as needed */
+  color: #000000;
+}
+
+h3 {
+  font-size: 24px; /* Example size, adjust as needed */
+  color: #000000;
+}
+
+h4 {
+  font-size: 20px; /* Example size, adjust as needed */
+  color: #000000;
+}
+
+h5 {
+  font-size: 18px; /* Example size, adjust as needed */
+  color: #000000;
+}
+
+
+/* Customizing font size and weight for the menu and footer */
+.ant-menu {
+  font-size: 20px; /* Example size, adjust as needed */
+}
+
+.ant-layout-footer {
+  font-weight: 700; /* Example weight, adjust as needed */
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.content {
+  flex: 1;
+}
+
+@media (max-width: 800px) {
+  h4 {
+    font-size: 14px; /* Example size, adjust as needed */
+    color: #000000;
+  }
+}

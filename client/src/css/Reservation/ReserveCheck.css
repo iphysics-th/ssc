@@ -1,0 +1,113 @@
+/* ReserveCheck.css */
+
+.reservation-lookup-container {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.reservation-lookup-container h1 {
+  font-size: 2em;
+  margin-bottom: 20px;
+}
+
+.reservation-input {
+  width: calc(100% - 22px);
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 1.2em;
+}
+
+.search-button {
+  padding: 10px 20px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #4caf50;
+  color: white;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.search-button:hover {
+  background-color: #45a049;
+}
+
+.error-message {
+  color: red;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.reservation-data {
+  text-align: left;
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: white;
+}
+
+.reservation-data h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #004080; /* Navi color */
+  font-size: 1.5em;
+}
+
+.reservation-data p {
+  margin: 10px 0;
+  font-size: 1.2em;
+}
+
+.reservation-data p strong {
+  display: inline-block;
+  width: 250px; /* Adjust width to fit the Thai text */
+  color: #004080; /* Navi color */
+  font-weight: bold;
+}
+
+.slot-selections-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.slot-selections-table th,
+.slot-selections-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.slot-selections-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+  color: #004080; /* Navi color */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .reservation-lookup-container {
+    padding: 10px;
+  }
+  .reservation-data p {
+    font-size: 1em;
+  }
+  .reservation-data p strong {
+    width: 100%; /* Full width on mobile */
+    text-align: left;
+  }
+  .slot-selections-table th,
+  .slot-selections-table td {
+    font-size: 0.9em;
+    padding: 6px;
+  }
+}

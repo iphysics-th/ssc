@@ -1,0 +1,22 @@
+/* CourseSelection.module.css */
+.container {
+    padding: 20px;
+  }
+  
+  .card {
+    margin-bottom: 20px;
+  }
+  
+  .centerText {
+    text-align: center;
+  }
+  
+  .largeButtonContainer {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  .fullWidth {
+    width: 100%;
+  }
+  
