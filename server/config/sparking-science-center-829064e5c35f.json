@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "sparking-science-center",
+  "private_key_id": "829064e5c35f386247e003891ebe5c2662d33f9d",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCu9OYxfKSilapy\nzS4Ud5rZ+XFezyIQgyYhKYHiwTOTG+sUUv73+VXXOkKM2FrlHWfLxW6UGkZzgkLL\nJ7Y2cUO34yr4DegnXXUL2bpdcyHWJWCF299JYhiyPVqmptTtD2uH06KuBo6QBN4h\nf1di5qwsIBV27M+GWVGTFOO1LcUxxsKRNUaCf42EZlLmTgYABS6hB8D/pq6C2l1F\nIgeRJ3H7dxfOVNgkg2ZQYKlxm495KhTM7N4h4yyAmq0GboOy7ClFf0ZOTVZdrKB7\nA8R7tuyB7JnuxRpiQ9ov3OLBHLlsGO1zb//r9/WfgikkL9a8fS73WVUC1C6ZiM/F\nix9cujhFAgMBAAECggEACv81tjKWyT64Yf2SQehqq/zJKs5riQzVSWGp2ljj0awA\nO1zOze4MKTpuPcVzoScXWRrlzRqsXEz5vySV3WzXzCfT5uzo2gs+dNTl/phirhUs\nsKfrVwTQIelIA2Wac0l0LCtvSZpRPQLb+3sHlnMtVfCw/gf7MKn4k1LNepvlOIWi\nPEPwU552zfqF1UsUS9USv2ciPzKUsygxK+Kk8LNQZE+RgkcKi/rs4hZD867vx9HX\nxSWi20HQ8KQ/BBmVBShchVQNf2eDnjsdRaLq96gsmIg5qhxbPvPVnVXh81IGmQMO\nHaNZmB1wIeSPpYMcySrlT2aZPDveWHbhODtSgFUiAQKBgQDyitngHsimgqrfHcPV\noQXWYHvfbedLDT+zYnzY/zeM4QkflivWFSvUhZ+zJmVf2Qva30OeN1c6Rn0gAdkD\nKyN07c47RFYo8yTuEL4E5KtS0plaF87zBURni1Qrbk0jw5d3GcCujomcpjldsWDY\npjKnrK99um5bNEUPXRJhWVlLBQKBgQC4qgnpFtpXNwMuMPigjNFHfAxWgek9ZqI5\nmnwICfIlrO5Kom/i1zHllbFMg6BdW/zxCCF7MHsyKuDLGdeY4xgbBuhX1/qNd93c\ntem8HZUiZ08isWyPpU9frXkO6n1uxfFrs3TyxUZkna30oECTrP6D1aClLs7RA2mD\nudllVOU8QQKBgQDU7Z9PCdd/jxFxpRDq+F1GkhfN1A+NLQlyc5FFc/GRxXIb/9tm\nK9n5zoGgZqHy3npw4TbcrJrwdzecJOMey/1pxugZ0emOM7+FHL+lThc2M9sbY/F0\nGniuKnxvUHt6XVkY30vwMwSOuMN+BJ4QNQAdghXi3AvMF/xU+5GKU0V3/QKBgGDd\nSM+MnkFLaQ6sv24wD4MIzcv+3yLHGGdQ4qiw1uTuXhymMjxyFwlPyS3SiacPHpIs\naquc1bKODVZcGtxmmvlqWSvi7dmRO76Paai0d8sRF9Ch8skytH0CmNK7K8qUaDvP\naZQC6RbUIzCDcvxDrUnoIBklgXTf7lQbg66Epq5BAoGBAM//EiiQpc5UNTehFoVA\n/NZ1Kj2BoxIYSV4dggpfZHau+2K/3afxSMnLUWJmaH1CHBmpBLWrSVg3O73EAKFV\n4ICe6YZV6MTyql5o1UPzPs4QQvjygZ9sU7Cdw/faTmE7xx8fGSEgzrVtFWmauqzc\nIpxeLVYQVqsrNYa1KM+DsDOE\n-----END PRIVATE KEY-----\n",
+  "client_email": "ssc-reservation@sparking-science-center.iam.gserviceaccount.com",
+  "client_id": "116877197791990474862",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/ssc-reservation%40sparking-science-center.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

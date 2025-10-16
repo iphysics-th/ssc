@@ -1,0 +1,5 @@
+require("dotenv").config();
+
+module.exports = {
+  secret: process.env.ACCESS_TOKEN_SECRET || "default_secret_key"
+};

@@ -1,0 +1,20 @@
+# dependencies & caches
+node_modules/
+**/node_modules/
+.cache/
+**/.cache/
+
+# builds
+dist/
+build/
+.out/
+.next/
+.eslintcache
+
+# env
+.env
+.env.*
+!.env.example
+*.key
+*.crt
+*.pem

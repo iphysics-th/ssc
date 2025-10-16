@@ -1,0 +1,74 @@
+const dayjs = require('dayjs');
+
+const monthMapping = {
+  'January': 'มกราคม',
+  'February': 'กุมภาพันธ์',
+  'March': 'มีนาคม',
+  'April': 'เมษายน',
+  'May': 'พฤษภาคม',
+  'June': 'มิถุนายน',
+  'July': 'กรกฎาคม',
+  'August': 'สิงหาคม',
+  'September': 'กันยายน',
+  'October': 'ตุลาคม',
+  'November': 'พฤศจิกายน',
+  'December': 'ธันวาคม'
+};
+
+const formatBuddhistDate = (date) => {
+  const buddhistYear = dayjs(date).year() + 543;
+  const monthName = monthMapping[dayjs(date).format('MMMM')];
+  return `${dayjs(date).format('D')} ${monthName} ${buddhistYear}`;
+};
+
+const translateSubject = (subject) => {
+  const subjectMapping = {
+    'physics': 'ฟิสิกส์',
+    'chemistry': 'เคมี',
+    'biology': 'ชีววิทยา',
+    'mathematics': 'คณิตศาสตร์'
+    // Add other subjects here if needed
+  };
+  return subjectMapping[subject] || subject;
+};
+
+const translatePrefix = (prefix) => {
+  const prefixMapping = {
+    'mr': 'นาย',
+    'ms': 'นางสาว',
+    'mrs': 'นาง',
+    'dr': 'ดร.'
+    // Add other prefixes here if needed
+  };
+  return prefixMapping[prefix] || prefix;
+};
+
+const translateSchoolSize = (size) => {
+  const sizeMapping = {
+    'small': 'โรงเรียนขนาดเล็ก',
+    'medium': 'โรงเรียนขนาดกลาง',
+    'large': 'โรงเรียนขนาดใหญ่',
+    'very_large': 'โรงเรียนขนาดใหญ่พิเศษ'
+    // Add other sizes here if needed
+  };
+  return sizeMapping[size] || size;
+};
+
+const translateStatus = (status) => {
+  const statusMapping = {
+    'teacher': 'ครู',
+    'school_representative': 'ตัวแทนโรงเรียน',
+    'principal': 'ผู้อำนวยการ',
+    'vice_principal': 'รองผู้อำนวยการ'
+    // Add other statuses here if needed
+  };
+  return statusMapping[status] || status;
+};
+
+module.exports = {
+  formatBuddhistDate,
+  translateSubject,
+  translatePrefix,
+  translateSchoolSize,
+  translateStatus
+};

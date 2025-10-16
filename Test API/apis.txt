@@ -1,0 +1,86 @@
+Register
+curl -X POST http://localhost:5000/api/auth/signup -H "Content-Type: application/json" -d "{\"username\": \"test1\",\"email\": \"test1@ttt.com\",\"password\": \"123456789\",\"roles\": [\"user\",\"moderator\"]}"
+
+Login
+curl -X POST http://localhost:5000/api/auth/signin -H "Content-Type: application/json" -d "{\"username\": \"test1\", \"password\": \"123456789\"}"
+
+accessToken
+{"id":"65ad5d31e640ab77a3167660","username":"test1","email":"test1@ttt.com","roles":["ROLE_MODERATOR","ROLE_USER"],"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1YWQ1ZDMxZTY0MGFiNzdhMzE2NzY2MCIsImlhdCI6MTcwNjIwNDU5MywiZXhwIjoxNzA2MjkwOTkzfQ.DKtSNoTNWyQcdvPtHMMakFTLF9nsUTGBK1pnY9SQ4_M"}
+
+Test Get protect 
+curl -X GET http://localhost:5000/api/test/admin -H "Content-Type: application/json" -H "x-access-token:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1YWQ1ZDMxZTY0MGFiNzdhMzE2NzY2MCIsImlhdCI6MTcwNjIwNDU5MywiZXhwIjoxNzA2MjkwOTkzfQ.DKtSNoTNWyQcdvPtHMMakFTLF9nsUTGBK1pnY9SQ4_M"
+
+
+Call public 
+curl -X GET http://localhost:5000/api/test/all -H "Content-Type: application/json"
+
+Call access protect
+curl -X GET http://localhost:5000/api/test/user -H "Content-Type: application/json"
+
+=====================================================
+PostMan
+http://localhost:5000/api/lecturer
+Body Json 
+{
+    "name_th":"test name th",
+    "surname_th":"",
+    "position_th":"",
+    "name_en":"",
+    "surname_en":"",
+    "position_en":"",
+    "division_en":"",
+    "division_th":"",
+    "program":"",
+    "image":"",
+    "doctoral":"",
+    "doctoral_year":0,
+    "master":"",
+    "master_year":0,
+    "email":""
+  }
+===========================================================
+Signup 
+http://localhost:5000/api/auth/signup
+Body Json 
+{
+    "username": "test1",
+    "email": "test1@ttt.com",
+    "password": "123456789",
+    "roles": ["user","moderator"]
+}
+
+==============================================================
+signin
+http://localhost:5000/api/auth/signin
+Body Json
+{
+    "username": "test1",
+    "password": "123456789"
+}
+
+===========================================
+Test auth role admin
+http://localhost:5001/api/test/admin
+Header 
+x-access-token : [Token]
+
+==============================================
+Test find by id 
+http://localhost:5000/api/lecturer/65b4d2d15cb094e950cd1202
+set up role "admin"
+Header 
+x-access-token : [Token]
+====================================================
+Test delete by id 
+http://localhost:5000/api/lecturer/65b4d28ded2bffce815da574
+
+=========================================================
+Test update by id 
+http://localhost:5000/api/lecturer/65b4ec9441f9706e9ec64e44
+Body Json 
+เลือก field ไหนที่จะ update ก็ เอามาใส่ 
+{
+    "name_th": "test update name th",
+    "surname_th":"test update surname th",
+    "email":"test_add_email@ttt.com"
+}
