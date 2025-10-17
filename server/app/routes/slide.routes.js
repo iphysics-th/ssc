@@ -20,6 +20,9 @@ const upload = multer({ storage: storage });
 module.exports = (app) => {
     const router = express.Router();
 
+    // Return the most recent slide images stored on disk
+    router.get('/', controller.listRecentSlides);
+
     // Route to get slide data
     router.get('/:slideNumber', controller.getSlide);
 
@@ -27,7 +30,7 @@ module.exports = (app) => {
     // Use Multer middleware to handle the file upload
     router.post('/:slideNumber', upload.single('image'), controller.updateSlide);
 
-    // Use the router for the '/api/slideshow' base path
+    // Use the router for the '/api/slide' base path
     app.use('/api/slide', router);
 
     // Route for creating a new slide (if necessary)

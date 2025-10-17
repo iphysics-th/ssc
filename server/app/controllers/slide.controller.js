@@ -1,5 +1,10 @@
+const fs = require('fs');
+const path = require('path');
 const db = require("../models");
 const Slideshow = db.slideshow;
+
+const SLIDES_DIR = path.join(__dirname, '../../public/slides');
+const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
 
 // Assuming slideImage will now be a path to the image stored on the server
 exports.updateSlide = async (req, res) => {
@@ -68,5 +73,35 @@ exports.getSlide = async (req, res) => {
         res.status(200).send(slide);
     } catch (error) {
         res.status(500).send({ message: "Error retrieving slide information." });
+    }
+};
+
+exports.listRecentSlides = async (req, res) => {
+    try {
+        if (!fs.existsSync(SLIDES_DIR)) {
+            return res.json([]);
+        }
+
+        fs.readdir(SLIDES_DIR, (err, files) => {
+            if (err) {
+                console.error('Failed to read slides directory:', err);
+                return res.status(500).send({ message: 'Error reading slides directory' });
+            }
+
+            const imageFiles = files
+                .filter((file) => IMAGE_EXTENSIONS.has(path.extname(file).toLowerCase()))
+                .map((file) => ({
+                    name: file,
+                    time: fs.statSync(path.join(SLIDES_DIR, file)).mtime.getTime(),
+                }))
+                .sort((a, b) => b.time - a.time)
+                .slice(0, 5)
+                .map((file) => file.name);
+
+            res.json(imageFiles);
+        });
+    } catch (error) {
+        console.error('Unexpected error while listing slides:', error);
+        res.status(500).send({ message: 'Failed to list slides' });
     }
 };

@@ -23,6 +23,7 @@ const UserReservations = () => {
   const auth = useSelector((state) => state.auth);
   const user = typeof auth.user === 'object' ? auth.user : null;
   const userEmail = (user?.email || user?.mail || '').trim();
+  const username = (user?.username || '').trim();
 
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,10 +41,13 @@ const UserReservations = () => {
         });
         if (!isMounted) return;
         const data = response.data || [];
-        if (data.length === 0 && userEmail) {
+        if (data.length === 0 && (userEmail || username)) {
           try {
             const fallbackResponse = await axios.get(`${backendUrl}/api/reservation/by-email`, {
-              params: { email: userEmail },
+              params: {
+                email: userEmail || undefined,
+                username: username || undefined,
+              },
               withCredentials: true,
             });
             setReservations(fallbackResponse.data || []);
@@ -62,10 +66,13 @@ const UserReservations = () => {
           return;
         }
         console.error('Primary reservation fetch failed:', err);
-        if (userEmail) {
+        if (userEmail || username) {
           try {
             const fallbackResponse = await axios.get(`${backendUrl}/api/reservation/by-email`, {
-              params: { email: userEmail },
+              params: {
+                email: userEmail || undefined,
+                username: username || undefined,
+              },
               withCredentials: true,
             });
             setReservations(fallbackResponse.data || []);
@@ -88,7 +95,7 @@ const UserReservations = () => {
     return () => {
       isMounted = false;
     };
-  }, [userEmail]);
+  }, [userEmail, username]);
 
   if (loading) {
     return (

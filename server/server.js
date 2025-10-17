@@ -1,9 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const dbConfig = require("./app/config/db.config");
-const slideshowRoutes = require('./routes/slideshow');
-const lecturerRoutes = require('./routes/lecturer');
-const makeReservation = require('./routes/reservations');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
@@ -63,16 +60,10 @@ app.use(express.static('public', {
   }
 }));
 
-// API Routes
-app.use('/api/slideshow', slideshowRoutes);
-app.use('/api/lecturer', lecturerRoutes);
-// app.use('/api/reservation', makeReservation);
-
 // App routes
 require("./app/routes/auth.routes")(app);
 require("./app/routes/user.routes")(app);
 require("./app/routes/lecturer.routes")(app);
-// require("./app/routes/lecturerlist.routes")(app);
 require("./app/routes/slide.routes")(app);
 require("./app/routes/reservation.routes")(app);
 require("./app/routes/subject.routes")(app);

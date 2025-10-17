@@ -8,9 +8,12 @@ const { appendReservationToSheet } = require('../../utils/googleSheets');
 const { sendEmailNotification } = require('../../utils/emailer');
 
 const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const buildEmailRegexCondition = (field, email) => ({
-  [field]: { $regex: new RegExp(`^${escapeRegExp(email)}$`, 'i') },
+const buildCaseInsensitiveCondition = (field, value) => ({
+  [field]: { $regex: new RegExp(`^${escapeRegExp(value)}$`, 'i') },
 });
+
+const buildEmailRegexCondition = (field, email) => buildCaseInsensitiveCondition(field, email);
+const buildUsernameRegexCondition = (field, username) => buildCaseInsensitiveCondition(field, username);
 
 exports.createReservation = async (req, res) => {
   try {
@@ -238,6 +241,7 @@ exports.getReservationsForCurrentUser = async (req, res) => {
     }
 
     const email = (user.email || '').trim();
+    const username = (user.username || '').trim();
     const conditions = [{ userId }];
 
     if (email) {
@@ -248,9 +252,36 @@ exports.getReservationsForCurrentUser = async (req, res) => {
       );
     }
 
+    if (username) {
+      conditions.push(
+        buildUsernameRegexCondition('userInfo.username', username)
+      );
+    }
+
     const reservations = await Reservation.find({ $or: conditions }).sort({ createdAt: -1 });
     const shaped = await Promise.all(reservations.map(doc => ensureClassSubjectsShape(doc)));
-    res.json(shaped);
+
+    const defaultUserInfo = {
+      username: username || null,
+      email: email || null,
+    };
+
+    const normalizedReservations = shaped.map((reservation) => {
+      const existingUserInfo = reservation.userInfo && typeof reservation.userInfo === 'object'
+        ? reservation.userInfo
+        : {};
+
+      return {
+        ...reservation,
+        userInfo: {
+          ...existingUserInfo,
+          username: existingUserInfo.username || defaultUserInfo.username,
+          email: existingUserInfo.email || defaultUserInfo.email,
+        },
+      };
+    });
+
+    res.json(normalizedReservations);
   } catch (error) {
     console.error('Error fetching user reservations:', error);
     res.status(500).json({ message: 'Failed to fetch reservations' });
@@ -260,15 +291,27 @@ exports.getReservationsForCurrentUser = async (req, res) => {
 exports.getReservationsByEmail = async (req, res) => {
   try {
     const email = (req.query.email || '').trim();
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+    const username = (req.query.username || '').trim();
+
+    if (!email && !username) {
+      return res.status(400).json({ message: 'Email or username is required' });
     }
 
-    const conditions = [
-      buildEmailRegexCondition('userInfo.email', email),
-      buildEmailRegexCondition('mail', email),
-      buildEmailRegexCondition('email', email),
-    ];
+    const conditions = [];
+
+    if (email) {
+      conditions.push(
+        buildEmailRegexCondition('userInfo.email', email),
+        buildEmailRegexCondition('mail', email),
+        buildEmailRegexCondition('email', email),
+      );
+    }
+
+    if (username) {
+      conditions.push(
+        buildUsernameRegexCondition('userInfo.username', username)
+      );
+    }
 
     const reservations = await Reservation.find({ $or: conditions }).sort({ createdAt: -1 });
     const shaped = await Promise.all(reservations.map(doc => ensureClassSubjectsShape(doc)));
