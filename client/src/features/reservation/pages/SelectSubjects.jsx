@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useImperativeHandle, useMemo, useState, forwardRef } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { Alert, Button, Card, Col, message, Row, Typography } from 'antd';
@@ -27,7 +27,7 @@ const formatBuddhistDate = (value) => {
   return `${date.format('D')} ${monthName} ${buddhistYear}`;
 };
 
-const SubjectSelection = () => {
+const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
   const navigate = useNavigate();
   const { formData, updateFormData } = useFormData();
 
@@ -232,13 +232,26 @@ const SubjectSelection = () => {
     }
 
     updateFormData({ classSubjects });
-    navigate('/user-info');
+    if (onNext) {
+      onNext();
+    } else {
+      navigate('/user-info');
+    }
   };
 
   const handleBack = () => {
     updateFormData({ classSubjects });
-    navigate('/dates');
+    if (onPrev) {
+      onPrev();
+    } else {
+      navigate('/dates');
+    }
   };
+
+  useImperativeHandle(ref, () => ({
+    next: handleNext,
+    prev: handleBack,
+  }));
 
   return (
     <Protected>
@@ -322,21 +335,23 @@ const SubjectSelection = () => {
             </Row>
           </div>
 
-          <div className="course-selection-footer">
-            {formData.reservationNumber && (
-              <p className="reservation-number">
-                <strong>หมายเลขการจองของคุณ:</strong> {formData.reservationNumber}
-              </p>
-            )}
-            <div>
-              <Button onClick={handleBack} style={{ marginRight: '10px' }}>
-                กลับไปหน้าก่อน
-              </Button>
-              <Button type="primary" onClick={handleNext} size="large">
-                หน้าถัดไป
-              </Button>
+          {!embedded && (
+            <div className="course-selection-footer">
+              {formData.reservationNumber && (
+                <p className="reservation-number">
+                  <strong>หมายเลขการจองของคุณ:</strong> {formData.reservationNumber}
+                </p>
+              )}
+              <div>
+                <Button onClick={handleBack} style={{ marginRight: '10px' }}>
+                  กลับไปหน้าก่อน
+                </Button>
+                <Button type="primary" onClick={handleNext} size="large">
+                  หน้าถัดไป
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </Col>
       </Row>
 
@@ -360,6 +375,8 @@ const SubjectSelection = () => {
       />
     </Protected>
   );
-};
+});
+
+SubjectSelection.displayName = 'SelectSubjects';
 
 export default SubjectSelection;

@@ -1,11 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import { Layout } from 'antd';
-import ReservationSetup from './components/Reservation/ReservationSetup';
-import DateSelection from './features/reservation/pages/SelectDate';
-import SubjectSelection from './features/reservation/pages/SelectSubjects';
-import UserInfoForm from './features/reservation/pages/UserInfo';
-import SummaryPage from './features/reservation/pages/ReviewSummary';
 import Services from './components/Services/Services';
 import STEMSSCDetail from './components/Services/STEMSSC';
 import ReserveCheck from './features/reservation/pages/Success';
@@ -18,7 +13,7 @@ import SignIn from './features/auth/components/SignInForm';
 import SocialSignIn from './components/Auth/socialsignin';
 import SlideUploadComponent from './components/Admin/slideUpload';
 import ReservationTable from './components/Admin/reservationData';
-import StepNavigation from './features/reservation/components/SlotCard';
+import ReservationProgress from './features/reservation/components/ReservationProgress';
 import EduResearch from './components/Page/EduResearch/EduResearch';
 import Dashboard from './components/Dashboard/Dashboard';
 import AppHeader from './layouts/Header';
@@ -43,7 +38,6 @@ const App = () => {
       <AppHeader />
         <Layout style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
           <Content style={{ padding: '0 0px', marginTop: 20, marginBottom: 20 }}>
-            <StepNavigation />
             <Routes>
             <Route path="/" element={<Home />} />
               <Route path="/service" element={<Services />} />
@@ -52,12 +46,13 @@ const App = () => {
               <Route path="/divisions/:division_en/:name_en" element={<LecturerProfile />} />
               <Route path="/instrument" element={<Instrument />} />
               <Route path="/contact" element={<ContactUs />} />
-              <Route path="/time" element={<ReservationSetup />} />
-              <Route path="/dates" element={<DateSelection />} />
-              <Route path="/subjects" element={<SubjectSelection />} />
-              <Route path="/user-info" element={<UserInfoForm />} />
-              <Route path="/summary" element={<SummaryPage />} />
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/reservation" element={<ReservationProgress initialStep={0} />} />
+              <Route path="/time" element={<ReservationProgress initialStep={0} />} />
+              <Route path="/dates" element={<ReservationProgress initialStep={1} />} />
+              <Route path="/subjects" element={<ReservationProgress initialStep={2} />} />
+              <Route path="/user-info" element={<ReservationProgress initialStep={3} />} />
+              <Route path="/summary" element={<ReservationProgress initialStep={4} />} />
+            <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/reservecheck" element={<ReserveCheck />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/signin" element={<SocialSignIn />} />

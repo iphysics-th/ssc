@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { Tag } from 'antd'; // Import Ant Design Tag for colored status
 import '../../../css/Reservation/ReserveCheck.css';
 import { useLazySearchReservationQuery } from '../reservationApiSlice';
 
-const ReserveCheck = () => {
+const ReserveCheck = forwardRef(({ onPrev }, ref) => {
   const [reservationNumber, setReservationNumber] = useState('');
   const [reservationData, setReservationData] = useState(null);
   const [error, setError] = useState(null);
   const [searchReservation, { isFetching }] = useLazySearchReservationQuery();
+
+  useImperativeHandle(ref, () => ({
+    prev: () => onPrev?.(),
+  }));
 
   const handleInputChange = (e) => {
     setReservationNumber(e.target.value);
@@ -190,6 +194,8 @@ const ReserveCheck = () => {
       )}
     </div>
   );
-};
+});
+
+ReserveCheck.displayName = 'ReservationSuccess';
 
 export default ReserveCheck;

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useImperativeHandle, useMemo, useState, forwardRef } from 'react';
 import { Alert, Button, Col, Form, InputNumber, Modal, Row, Select } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import Protected from '../../hooks/userProtected';
@@ -20,7 +20,7 @@ const classOptions = Array.from({ length: 5 }, (_, index) => {
   return { value, label: `${value} ห้องเรียน` };
 });
 
-const ReservationSetup = () => {
+const ReservationSetup = forwardRef(({ onNext, embedded = false }, ref) => {
   const navigate = useNavigate();
   const { formData, updateFormData } = useFormData();
   const [triggerReservationCheck] = useLazyCheckReservationNumberQuery();
@@ -62,20 +62,11 @@ const ReservationSetup = () => {
     }
   }, [formData.reservationNumber, updateFormData]);
 
-  const handleOpenStudentModal = () => {
-    setIsStudentModalVisible(true);
-  };
-
-  const handleCloseStudentModal = () => {
-    setIsStudentModalVisible(false);
-  };
+  const handleOpenStudentModal = () => setIsStudentModalVisible(true);
+  const handleCloseStudentModal = () => setIsStudentModalVisible(false);
 
   const handleStudentModalOk = () => {
-    updateFormData({
-      numberOfStudents,
-      studentRange,
-      studentLevel,
-    });
+    updateFormData({ numberOfStudents, studentRange, studentLevel });
     setIsStudentModalVisible(false);
   };
 
@@ -97,19 +88,24 @@ const ReservationSetup = () => {
     }
 
     if (formData.numberOfClasses && formData.numberOfClasses !== sanitizedClasses) {
-      if (!('classSubjects' in updates)) {
-        const existingSubjects = Array.isArray(formData.classSubjects) ? formData.classSubjects : [];
-        if (sanitizedClasses <= existingSubjects.length) {
-          updates.classSubjects = existingSubjects.slice(0, sanitizedClasses);
-        } else {
-          updates.classSubjects = existingSubjects.slice();
-        }
-      }
+      const existingSubjects = Array.isArray(formData.classSubjects) ? formData.classSubjects : [];
+      updates.classSubjects =
+        sanitizedClasses <= existingSubjects.length
+          ? existingSubjects.slice(0, sanitizedClasses)
+          : existingSubjects.slice();
     }
 
     updateFormData(updates);
-    navigate('/dates');
+    if (onNext) {
+      onNext();
+    } else {
+      navigate('/dates');
+    }
   };
+
+  useImperativeHandle(ref, () => ({
+    next: handleNext,
+  }));
 
   return (
     <Protected>
@@ -155,16 +151,18 @@ const ReservationSetup = () => {
             />
           </div>
 
-          <div className="course-selection-footer">
-            {formData.reservationNumber && (
-              <p className="reservation-number">
-                <strong>หมายเลขการจองของคุณ:</strong> {formData.reservationNumber}
-              </p>
-            )}
-            <Button type="primary" onClick={handleNext} size="large">
-              หน้าถัดไป
-            </Button>
-          </div>
+          {!embedded && (
+            <div className="course-selection-footer">
+              {formData.reservationNumber && (
+                <p className="reservation-number">
+                  <strong>หมายเลขการจองของคุณ:</strong> {formData.reservationNumber}
+                </p>
+              )}
+              <Button type="primary" onClick={handleNext} size="large">
+                หน้าถัดไป
+              </Button>
+            </div>
+          )}
         </Col>
       </Row>
 
@@ -225,6 +223,8 @@ const ReservationSetup = () => {
       </Modal>
     </Protected>
   );
-};
+});
+
+ReservationSetup.displayName = 'ReservationSetup';
 
 export default ReservationSetup;

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Form, Input, Button, Select, Card } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -7,7 +7,7 @@ import { useGetUserProfileQuery } from '../../auth/authApiSlice';
 
 const { Option } = Select;
 
-const UserInfoForm = () => {
+const UserInfoForm = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const { formData, updateFormData } = useFormData();
@@ -27,12 +27,20 @@ const UserInfoForm = () => {
   // Handle form submission
   const handleSubmit = (values) => {
     updateFormData(values);
-    navigate('/summary');
+    if (onNext) {
+      onNext();
+    } else {
+      navigate('/summary');
+    }
   };
 
   const goBackToSubjects = () => {
     updateFormData(form.getFieldsValue());
-    navigate('/subjects');
+    if (onPrev) {
+      onPrev();
+    } else {
+      navigate('/subjects');
+    }
   };
 
   useEffect(() => {
@@ -58,6 +66,11 @@ const UserInfoForm = () => {
       updateFormData({ __profilePrefilled: true });
     }
   }, [profileError, isProfileFetching, shouldPrefill, updateFormData]);
+
+  useImperativeHandle(ref, () => ({
+    next: () => form.submit(),
+    prev: goBackToSubjects,
+  }));
 
   return (
     <Card style={{ maxWidth: '600px', margin: 'auto', padding: '20px' }}>
@@ -152,23 +165,27 @@ const UserInfoForm = () => {
 
       
 
-      <Form.Item wrapperCol={{ span: 24, style: { textAlign: 'center' } }}>
-        {formData.reservationNumber && (
-            <p className="reservation-number">
-                <strong>หมายเลขการจองของคุณ:</strong> {formData.reservationNumber}
-            </p>
-        )}
-        <Button onClick={goBackToSubjects} style={{ marginRight: '10px' }}>
-          กลับไปหน้าก่อน
-        </Button>
-        <Button type="primary" htmlType="submit" style={{ width: '40%' }}>
-          หน้าถัดไป
-        </Button>
-      </Form.Item>
+      {!embedded && (
+        <Form.Item wrapperCol={{ span: 24, style: { textAlign: 'center' } }}>
+          {formData.reservationNumber && (
+              <p className="reservation-number">
+                  <strong>หมายเลขการจองของคุณ:</strong> {formData.reservationNumber}
+              </p>
+          )}
+          <Button onClick={goBackToSubjects} style={{ marginRight: '10px' }}>
+            กลับไปหน้าก่อน
+          </Button>
+          <Button type="primary" htmlType="submit" style={{ width: '40%' }}>
+            หน้าถัดไป
+          </Button>
+        </Form.Item>
+      )}
 
     </Form>
     </Card>
   );
-};
+});
+
+UserInfoForm.displayName = 'UserInfo';
 
 export default UserInfoForm;

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useImperativeHandle, useMemo, useState, forwardRef } from 'react';
 import dayjs from 'dayjs';
 import { Card, Alert, Select, Space, Row, Col, Button, InputNumber, Form, Modal } from 'antd';
 import { Calendar } from '../../../lib/react-calendar-kit';
@@ -32,7 +32,7 @@ const monthMapping = {
 
 const timeSlots = ['คาบเช้า (9:00 - 12:00)', 'คาบบ่าย (13:00 - 16:00)'];
 
-const CourseSelection = () => {
+const CourseSelection = forwardRef(({ onNext, embedded = false }, ref) => {
   const [studentRange, setStudentRange] = useState('มัธยม');
   const [studentLevel, setStudentLevel] = useState(1);
   const [value, setValue] = useState(dayjs());
@@ -108,7 +108,7 @@ const CourseSelection = () => {
         number = Math.random().toString(36).substr(2, 9).toUpperCase();
         unique = await checkReservationNumberUnique(number);
       }
-      updateFormData({ ...formData, reservationNumber: number });
+      updateFormData({ reservationNumber: number });
     };
 
     if (!formData.reservationNumber) {
@@ -118,7 +118,7 @@ const CourseSelection = () => {
 
   useEffect(() => {
     if (formData.selectedDates && formData.numberOfDays && formData.slotSelections && formData.numberOfStudents) {
-      setSelectedDates(formData.selectedDates);
+      setSelectedDates(formData.selectedDates.map((date) => dayjs(date)));
       setNumberOfDays(String(formData.numberOfDays));
       setSlotSelections(formData.slotSelections);
       setNumberOfStudents(formData.numberOfStudents); // Set initial value from form data
@@ -127,7 +127,6 @@ const CourseSelection = () => {
 
   const goToUserInfoForm = () => {
     updateFormData({
-      ...formData,
       numberOfDays: parseFloat(numberOfDays),
       numberOfStudents,
       selectedDates,
@@ -136,8 +135,16 @@ const CourseSelection = () => {
       studentLevel
     });
 
-    navigate('/user-info');
+    if (onNext) {
+      onNext();
+    } else {
+      navigate('/user-info');
+    }
   };
+
+  useImperativeHandle(ref, () => ({
+    next: goToUserInfoForm,
+  }));
 
   const onSelect = (newValue) => {
     const day = newValue.day(); // 0 = Sunday, 6 = Saturday
@@ -209,7 +216,6 @@ const CourseSelection = () => {
 
   const handleDaysChange = (value) => {
     setNumberOfDays(parseFloat(value));
-    setStartDate(null);
     setSelectedDates([]);
   };
 
@@ -436,14 +442,16 @@ const CourseSelection = () => {
 
 
           {/* Reservation number and Next */}
-          <div className="course-selection-footer">
-            {formData.reservationNumber && (
-              <p className="reservation-number">
-                <strong>หมายเลขการจองของคุณ:</strong> {formData.reservationNumber}
-              </p>
-            )}
-            <Button type="primary" onClick={goToUserInfoForm} size="large">หน้าถัดไป</Button>
-          </div>
+          {!embedded && (
+            <div className="course-selection-footer">
+              {formData.reservationNumber && (
+                <p className="reservation-number">
+                  <strong>หมายเลขการจองของคุณ:</strong> {formData.reservationNumber}
+                </p>
+              )}
+              <Button type="primary" onClick={goToUserInfoForm} size="large">หน้าถัดไป</Button>
+            </div>
+          )}
         </Col>
       </Row>
 
@@ -454,7 +462,7 @@ const CourseSelection = () => {
         onCancel={() => setIsStudentModalVisible(false)}
         onOk={() => {
           setIsStudentModalVisible(false);
-          updateFormData({ ...formData, numberOfStudents, studentRange, studentLevel });
+          updateFormData({ numberOfStudents, studentRange, studentLevel });
         }}
       >
         <Form.Item
@@ -506,6 +514,8 @@ const CourseSelection = () => {
 
     </Protected>
   );
-};
+});
+
+CourseSelection.displayName = 'SelectDuration';
 
 export default CourseSelection;
