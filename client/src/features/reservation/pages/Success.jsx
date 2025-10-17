@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Tag } from 'antd'; // Import Ant Design Tag for colored status
-import '../../css/Reservation/ReserveCheck.css'; // Import your CSS for styling
+import '../../../css/Reservation/ReserveCheck.css';
 
 const ReserveCheck = () => {
   const [reservationNumber, setReservationNumber] = useState('');

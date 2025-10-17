@@ -1,7 +1,7 @@
 "use client";
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
-import { apiSlice } from "./api/apiSlice";
-import authSlice from "./auth/authSlice";
+import { apiSlice } from "./apiClient";
+import authSlice from "../features/auth/authSlice";
 import {
   persistStore,
   persistReducer,

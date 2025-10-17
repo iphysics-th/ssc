@@ -3,10 +3,10 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { Alert, Button, Card, Col, message, Row, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import Protected from '../../hooks/userProtected';
-import { useFormData } from '../../contexts/FormDataContext';
-import SubjectSelectionModal from './SubjectSelectionModal';
-import '../../css/Reservation/CourseSelection.css';
+import Protected from '../../../hooks/userProtected';
+import { useFormData } from '../../../contexts/FormDataContext';
+import SubjectSelectionModal from '../components/SubjectModal';
+import '../../../css/Reservation/CourseSelection.css';
 
 const { Paragraph, Title } = Typography;
 

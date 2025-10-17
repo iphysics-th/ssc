@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../css/Home/AboutUs.css'; // Import the CSS file
+import '../../styles/global.css';
 import aboutUsImage from '../../assets/AboutUs.png';
 
 const AboutUs = () => {

@@ -1,5 +1,4 @@
-// Import the additional actions from authSlice.js
-import { apiSlice } from "../api/apiSlice";
+import { apiSlice } from "../../app/apiClient";
 import { userLoggedIn, userLoggedOut, signupStarted, signupSucceeded, signupFailed } from "./authSlice";
 
 export const authApi = apiSlice.injectEndpoints({

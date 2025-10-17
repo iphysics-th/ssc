@@ -5,9 +5,9 @@ import { useGoogleLogin } from '@react-oauth/google'; // Import Google Login com
 import { Formik } from 'formik';
 import { FcGoogle } from "react-icons/fc";
 import * as Yup from 'yup';
-import { useLoginMutation, useSocialAuthMutation } from '../../redux/auth/authApi'; // Adjust path as necessary
+import { useLoginMutation, useSocialAuthMutation } from '../authAPI';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
-import '../../css/Auth/signup.css'; // Reuse the same CSS for consistency
+import '../../../styles/variables.css';
 
 
 const SignInSchema = Yup.object().shape({

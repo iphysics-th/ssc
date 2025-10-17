@@ -2,27 +2,27 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import { Layout } from 'antd';
 import ReservationSetup from './components/Reservation/ReservationSetup';
-import DateSelection from './components/Reservation/DateSelection';
-import SubjectSelection from './components/Reservation/SubjectSelection';
-import UserInfoForm from './components/Reservation/UserInfoForm';
-import SummaryPage from './components/Reservation/SummaryPage';
+import DateSelection from './features/reservation/pages/SelectDate';
+import SubjectSelection from './features/reservation/pages/SelectSubjects';
+import UserInfoForm from './features/reservation/pages/UserInfo';
+import SummaryPage from './features/reservation/pages/ReviewSummary';
 import Services from './components/Services/Services';
 import STEMSSCDetail from './components/Services/STEMSSC';
-import ReserveCheck from './components/Reservation/ReserveCheck'; // Import the ReserveCheck component
+import ReserveCheck from './features/reservation/pages/Success';
 import { FormDataProvider } from './contexts/FormDataContext';
 import Divisions from './components/Lecturers/Divisions';
 import DivisionDetail from './components/Lecturers/DivisionDetail';
 import LecturerProfile from './components/Lecturers/lecturerProfile';
-import SignUp from './components/Auth/signup';
-import SignIn from './components/Auth/signin';
+import SignUp from './features/auth/components/SignUpForm';
+import SignIn from './features/auth/components/SignInForm';
 import SocialSignIn from './components/Auth/socialsignin';
 import SlideUploadComponent from './components/Admin/slideUpload';
 import ReservationTable from './components/Admin/reservationData';
-import StepNavigation from './components/Reservation/StepNavigation'; // Adjust the path as needed
+import StepNavigation from './features/reservation/components/SlotCard';
 import EduResearch from './components/Page/EduResearch/EduResearch';
 import Dashboard from './components/Dashboard/Dashboard';
-import AppHeader from './AppHeader';
-import AppFooter from './AppFooter';
+import AppHeader from './layouts/Header';
+import AppFooter from './layouts/Footer';
 import Home from './Home';
 import './App.css';
 

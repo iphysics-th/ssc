@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google'; // Import Google Login component
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import { useSignUpMutation, useSocialAuthMutation } from '../../redux/auth/authApi'; // Adjust this import
+import { useSignUpMutation, useSocialAuthMutation } from '../authAPI';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
-import '../../css/Auth/signup.css'; // Assuming you create a Signup.css for styling
+import '../../../styles/variables.css';
 
 const RECAPTCHA_SITE_KEY = process.env.REACT_APP_RECAPTCHA_SITE_KEY;
 

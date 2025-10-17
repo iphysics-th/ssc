@@ -407,6 +407,7 @@
 │       ├── reportWebVitals.js
 │       └── setupTests.js
 ├── combined.crt
+├── commit_script.sh
 ├── package-lock.json
 ├── package.json
 ├── README.md
@@ -439,7 +440,6 @@
 │   │       ├── admin.routes.js
 │   │       ├── auth.routes.js
 │   │       ├── lecturer.routes.js
-│   │       ├── lecturerlist.routes.js
 │   │       ├── reservation.routes.js
 │   │       ├── slide.routes.js
 │   │       ├── subject.routes.js
@@ -450,9 +450,6 @@
 │   │   ├── generateMessage.js
 │   │   ├── lineNotify.js
 │   │   └── reservationMapping
-│   ├── models
-│   │   ├── lecturer.js
-│   │   └── reservation.js
 │   ├── package-lock.json
 │   ├── package.json
 │   ├── public
@@ -463,10 +460,6 @@
 │   │       ├── slide3.jpg
 │   │       ├── slide4.jpg
 │   │       └── slide5.jpg
-│   ├── routes
-│   │   ├── lecturer.js
-│   │   ├── reservations.js
-│   │   └── slideshow.js
 │   ├── server.js
 │   └── utils
 │       ├── emailer.js
@@ -477,4 +470,4 @@
 └── Test API
     └── apis.txt
 
-66 directories, 412 files
+64 directories, 407 files

@@ -3,10 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Layout, Menu, Button, Drawer, Row, Col, notification, Dropdown, Avatar, Space } from 'antd';
 import { DownOutlined, UserOutlined, LoginOutlined, FormOutlined, DashboardOutlined, LogoutOutlined } from '@ant-design/icons';
-import './AppHeader.css';
-// Adjust the import path to your authApi file
-import { useLogOutMutation } from './redux/auth/authApi'; // Assuming you have a logout mutation
-import { userLoggedOut } from './redux/auth/authSlice'; // Ensure the path is correct
+import '../AppHeader.css';
+import { useLogOutMutation } from '../features/auth/authAPI';
+import { userLoggedOut } from '../features/auth/authSlice';
 
 const { Header } = Layout;
 

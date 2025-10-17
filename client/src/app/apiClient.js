@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { userLoggedIn } from "../auth/authSlice";
+import { userLoggedIn } from "../features/auth/authSlice";
 
 export const apiSlice = createApi({
   reducerPath: "api",

@@ -3,7 +3,7 @@ import { Button, notification } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google'; // Import Google Login component
 import { FcGoogle } from "react-icons/fc";
-import { useLoginMutation, useSocialAuthMutation } from '../../redux/auth/authApi'; // Adjust path as necessary
+import { useLoginMutation, useSocialAuthMutation } from '../../features/auth/authAPI';
 import '../../css/Auth/socialsignin.css'; // Reuse the same CSS for consistency
 
 

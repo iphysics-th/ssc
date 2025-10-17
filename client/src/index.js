@@ -4,7 +4,7 @@ import './index.css';
 import App from './App';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import { store, persistor } from './redux/store';
+import { store, persistor } from './app/store';
 import reportWebVitals from './reportWebVitals';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import 'antd/dist/reset.css';

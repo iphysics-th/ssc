@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { Card, Calendar, Alert, Select, Space, Row, Col, Button, InputNumber, Form, Modal } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { useFormData } from '../../contexts/FormDataContext';
+import { useFormData } from '../../../contexts/FormDataContext';
 import axios from 'axios';
-import SubjectSelectionModal from './SubjectSelectionModal';
-import Protected from "../../hooks/userProtected";
-import '../../css/Reservation/CourseSelection.css';
+import SubjectSelectionModal from '../components/SubjectModal';
+import Protected from '../../../hooks/userProtected';
+import '../../../css/Reservation/CourseSelection.css';
 import { message } from 'antd';
 
 dayjs.locale('th');

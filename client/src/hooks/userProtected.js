@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import UserAuth from "./userAuth"; // Adjust the path as necessary
+import UserAuth from "../app/hooks";
 
 export default function Protected({ children }) {
   const navigate = useNavigate();
