@@ -20,6 +20,12 @@ module.exports = function(app) {
   );
 
   app.get(
+    "/api/auth/me",
+    [authJwt.verifyToken],
+    controller.getAuthenticatedUser
+  );
+
+  app.get(
     "/api/user/profile",
     [authJwt.verifyToken],
     controller.getProfile

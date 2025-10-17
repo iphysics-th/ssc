@@ -8,11 +8,11 @@ const baseQuery = fetchBaseQuery({
 const baseQueryWithReauth = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
 
-  if (result?.error?.status === 401 && !args?.skipAuthRefresh) {
+  if (result?.error?.status === 401 && !(args?.skipAuthRefresh || extraOptions?.skipAuthRefresh)) {
     const refreshResult = await baseQuery(
-      { url: "api/auth/refreshtoken", method: "GET", skipAuthRefresh: true },
+      { url: "api/auth/refreshtoken", method: "GET" },
       api,
-      extraOptions
+      { ...extraOptions, skipAuthRefresh: true }
     );
 
     if (refreshResult?.error) {

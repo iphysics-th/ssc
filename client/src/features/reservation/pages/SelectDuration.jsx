@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { Card, Calendar, Alert, Select, Space, Row, Col, Button, InputNumber, Form, Modal } from 'antd';
+import { Card, Alert, Select, Space, Row, Col, Button, InputNumber, Form, Modal } from 'antd';
+import { Calendar } from '../../../lib/react-calendar-kit';
 import { useNavigate } from 'react-router-dom';
 import { useFormData } from '../../../contexts/FormDataContext';
 import SubjectSelectionModal from '../components/SubjectModal';
@@ -35,7 +36,6 @@ const CourseSelection = () => {
   const [studentRange, setStudentRange] = useState('มัธยม');
   const [studentLevel, setStudentLevel] = useState(1);
   const [value, setValue] = useState(dayjs());
-  const [startDate, setStartDate] = useState(null);
   const [selectedDates, setSelectedDates] = useState([]);
   const [numberOfDays, setNumberOfDays] = useState('1');
   const [numberOfStudents, setNumberOfStudents] = useState(1); // Initialize with 1 student
@@ -158,7 +158,7 @@ const CourseSelection = () => {
       return;
     }
 
-    setStartDate(newValue);
+    setValue(newValue);
 
     const dates = [newValue];
     for (let i = 1; i < Math.ceil(numberOfDays); i++) {
@@ -368,6 +368,8 @@ const CourseSelection = () => {
             <div className="calendar-scroll-wrapper">
               <div className="calendar-fixed-width">
                 <Calendar
+                  value={value}
+                  className="reservation-calendar"
                   onSelect={onSelect}
                   dateCellRender={dateCellRender}
                 />

@@ -1,19 +1,17 @@
 #!/bin/bash
 
-# A simple script to automate the git add, commit, and push process.
-# This script assumes you are running it inside the root directory
-# of the 'ssc' repository and you have already set up SSH or HTTPS
-# authentication for GitHub.
+# ============================================================
+# Git Commit Script with Auto SSH→HTTPS Fallback
+# ============================================================
+# Usage:
+#   ./commit_script.sh "Your commit message"
+# ============================================================
 
-# --- Configuration ---
-# The repository URL (used only for display, not necessary for git operations
-# once the remote is set up)
-REPO_URL="https://github.com/iphysics-th/ssc.git"
+REPO_SSH="git@github.com:iphysics-th/ssc.git"
+REPO_HTTPS="https://github.com/iphysics-th/ssc.git"
+BRANCH="main"
 
-# Default branch name
-DEFAULT_BRANCH="main"
-
-# Check if a commit message was provided as an argument
+# --- Check for commit message ---
 if [ -z "$1" ]; then
   echo "❌ Error: Please provide a commit message."
   echo "Usage: ./commit_script.sh \"Your commit message here\""
@@ -23,37 +21,49 @@ fi
 COMMIT_MESSAGE="$1"
 
 echo "=================================================="
-echo " Starting Git Commit Workflow for $REPO_URL"
+echo "🚀 Starting Git Commit Workflow for branch '$BRANCH'"
 echo "=================================================="
 
-# 1. Add all changes to the staging area
-echo "-> 1. Adding all changes (git add .)..."
+# 1️⃣ Stage changes
+echo "-> Adding changes..."
 git add .
 
-# Check if there are any changes to commit
 if git diff --cached --quiet; then
-    echo "-> No changes detected. Exiting script."
-    exit 0
+  echo "✅ No changes to commit. Exiting."
+  exit 0
 fi
 
-# 2. Commit the changes
-echo "-> 2. Committing changes with message: \"$COMMIT_MESSAGE\""
-# Uses the provided argument as the commit message
+# 2️⃣ Commit
+echo "-> Committing with message: \"$COMMIT_MESSAGE\""
 if ! git commit -m "$COMMIT_MESSAGE"; then
-    echo "❌ Git commit failed. Please check for conflicts or errors."
-    exit 1
+  echo "❌ Commit failed. Check for conflicts."
+  exit 1
 fi
 
-# 3. Push the changes to the default branch (main)
-echo "-> 3. Pushing changes to remote branch '$DEFAULT_BRANCH'..."
-if git push origin "$DEFAULT_BRANCH"; then
-    echo "✅ Successfully committed and pushed to GitHub!"
+# 3️⃣ Try SSH push first
+echo "-> Trying to push via SSH..."
+# Set SSH as remote
+git remote set-url origin "$REPO_SSH"
+
+# Run push with 5s timeout
+timeout 5 git push origin "$BRANCH"
+PUSH_STATUS=$?
+
+if [ $PUSH_STATUS -eq 0 ]; then
+  echo "✅ Successfully pushed via SSH!"
 else
-    echo "❌ Git push failed. Please check your network connection or permissions."
-    # If push fails, offer a warning but let the script exit gracefully (commit is still local)
+  echo "⚠️ SSH push failed or timed out. Switching to HTTPS..."
+  git remote set-url origin "$REPO_HTTPS"
+
+  echo "-> Retrying push via HTTPS..."
+  if git push origin "$BRANCH"; then
+    echo "✅ Successfully pushed via HTTPS!"
+  else
+    echo "❌ Push failed via both SSH and HTTPS."
     exit 1
+  fi
 fi
 
 echo "=================================================="
-
-exit 0
+echo "🎉 Done!"
+echo "=================================================="

@@ -20,6 +20,7 @@
     "jspdf": "^3.0.3",
     "react": "^18.2.0",
     "react-calendar": "^4.8.0",
+    "react-calendar-kit": "^1.0.6",
     "react-data-table-component": "^7.7.0",
     "react-dom": "^18.2.0",
     "react-google-recaptcha": "^3.1.0",

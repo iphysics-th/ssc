@@ -122,26 +122,27 @@ export const authApiSlice = apiSlice.injectEndpoints({
     }),
     refreshToken: builder.query({
       query: () => ({
-        url: "refresh",
+        url: "api/auth/refreshtoken",
         method: "GET",
       }),
       providesTags: ["Auth"],
     }),
     loadUser: builder.query({
       query: () => ({
-        url: "me",
+        url: "api/auth/me",
         method: "GET",
       }),
       providesTags: ["Auth", "User"],
       async onQueryStarted(arg, { queryFulfilled, dispatch }) {
         try {
           const { data } = await queryFulfilled;
-          dispatch(
-            userLoggedIn({
-              accessToken: data?.accessToken,
-              user: data?.user,
-            })
-          );
+          if (data) {
+            dispatch(
+              userLoggedIn({
+                user: data,
+              })
+            );
+          }
         } catch (error) {
           console.error("Failed to load user:", error);
         }
@@ -179,6 +180,7 @@ export const {
   useSocialAuthMutation,
   useRefreshTokenQuery,
   useLoadUserQuery,
+  useLazyLoadUserQuery,
   useGetAdminStatusQuery,
   useGetUserProfileQuery,
   useUpdateUserProfileMutation,

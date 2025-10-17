@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
-import { Alert, Button, Calendar, Col, message, Row } from 'antd';
+import { Alert, Button, Col, message, Row } from 'antd';
+import { Calendar } from '../../../lib/react-calendar-kit';
 import { useNavigate } from 'react-router-dom';
 import Protected from '../../../hooks/userProtected';
 import { useFormData } from '../../../contexts/FormDataContext';
@@ -177,7 +178,12 @@ const DateSelection = () => {
 
             <div className="calendar-scroll-wrapper">
               <div className="calendar-fixed-width">
-                <Calendar value={calendarValue} onSelect={onSelect} dateCellRender={dateCellRender} />
+                <Calendar
+                  value={calendarValue}
+                  onSelect={onSelect}
+                  dateCellRender={dateCellRender}
+                  className="reservation-calendar"
+                />
               </div>
             </div>
 

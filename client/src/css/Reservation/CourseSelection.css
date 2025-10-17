@@ -116,13 +116,18 @@
 /* Outer scrollable wrapper */
 .calendar-scroll-wrapper {
   width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Inner fixed-width calendar container */
 .calendar-fixed-width {
-  min-width: 800px;   /* Critical: prevents column wrap */
-  width: 800px;       /* Optional: can be min-width only */
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
+@media (max-width: 575px) {
+  .calendar-scroll-wrapper {
+    margin: 0 -8px;
+    padding: 0 8px;
+  }
+}
