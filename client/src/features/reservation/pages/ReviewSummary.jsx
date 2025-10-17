@@ -4,24 +4,11 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Button, message, Typography } from 'antd';
-import axios from 'axios';
 import '../../../css/Reservation/SummaryPage.css';
 import { useSelector } from 'react-redux';
+import { useCreateReservationMutation } from '../reservationApiSlice';
 
 dayjs.locale('th');
-
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
-
-const saveToDatabase = async (data) => {
-  try {
-    const response = await axios.post(`${backendUrl}/api/reservation/create`, data);
-    console.log('Data saved:', response.data);
-    message.success('การจองสำเร็จ!');
-  } catch (error) {
-    console.error('Error saving data:', error);
-    message.error('การจองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
-  }
-};
 
 const formatBuddhistDate = (value) => {
   const date = dayjs(value);
@@ -68,6 +55,7 @@ const SummaryPage = () => {
   const authUser = useSelector(state => state.auth.user);
   const userInfo = authUser && typeof authUser === 'object' ? authUser : null;
   const userId = userInfo?.id || userInfo?._id || null;
+  const [createReservation, { isLoading: isSaving }] = useCreateReservationMutation();
 
   const {
     numberOfDays,
@@ -256,7 +244,13 @@ const SummaryPage = () => {
       userId,
     };
 
-    await saveToDatabase(dataToSave);
+    try {
+      await createReservation(dataToSave).unwrap();
+      message.success('การจองสำเร็จ!');
+    } catch (error) {
+      console.error('Error saving data:', error);
+      message.error('การจองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+    }
   };
 
   return (
@@ -353,7 +347,7 @@ const SummaryPage = () => {
 
       <div className="summary-actions">
         <Button onClick={goBackToUserInfo} style={{ marginRight: '10px' }}>กลับไปหน้าก่อน</Button>
-        <Button type="primary" onClick={saveData}>ยืนยันการจอง</Button>
+        <Button type="primary" onClick={saveData} loading={isSaving}>ยืนยันการจอง</Button>
       </div>
 
       <Alert

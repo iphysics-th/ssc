@@ -1,147 +1,303 @@
-/* AppHeader.css */
-@media (min-width: 768px) {
-    .app-header {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #fff;
-        /* Adjust the background color as needed */
-        padding: 0 20px;
-        /* Adjust padding as needed */
-        box-shadow: 0 4px 5px rgba(0, 0, 0, 0.1);
-        /* Drop shadow */
-        position: sticky; /* Make the header sticky */
-        top: 0; /* Stick to the top */
-        z-index: 1000; /* Ensure it stays on top of other elements */
-        height: 100px;
-    }
-    
-    .logo-container-desktop {
-        flex-shrink: 0;
-        /* Prevent logo from shrinking */
-    }
-    
-    .logo-container-desktop a {
-        display: flex;
-        align-items: center;
-        height: 64px;
-        /* Set a fixed height */
-    }
-    
-    .logo {
-        height: 100%;
-        /* Use full height of the container */
-    }
-    
-    .menu-container {
-        display: flex;
-        align-items: flex-end;
-        flex-grow: 1;
-        /* Allow the menu container to grow */
-        justify-content: flex-end;
-        /* Align menu items to the right */
-    }
+/* ========================================================= */
+/* Base Styles (Desktop default)                             */
+/* ========================================================= */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  padding: 0 24px;
+  box-shadow: 0 4px 5px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: auto;
+  min-height: 90px;
+  line-height: normal;
+}
+
+.logo {
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+}
+
+.logo-container-desktop {
+  flex-shrink: 0;
+}
+
+.logo-container-desktop a {
+  display: flex;
+  align-items: center;
+  height: 70px;
+}
+
+.menu-container {
+  display: flex;
+  align-items: flex-end;
+  flex-grow: 1;
+  justify-content: flex-end;
+}
 
 .menu-desktop {
-        display: block;
-        /* Always show on larger screens */
-        width: 100%;
-        /* Take full width of the container */
-    }
-
-    .menu-mobile {
-        display: none;
-        /* Hide on larger screens */
-    }
-
-    .header-user-button {
-        color: #333;
-        font-weight: 500;
-    }
-
-    .header-user-button:hover,
-    .header-user-button:focus {
-        color: #1890ff;
-        background: transparent;
-    }
-
-    .header-username {
-        display: inline;
-        max-width: 140px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
+  display: block;
+  width: 100%;
 }
-    
-    /* Responsive styles for smaller screens */
-    @media (max-width: 768px) {
-        .app-header {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            background-color: #fff;
-            /* Adjust the background color as needed */
-            padding: 0 20px;
-            /* Adjust padding as needed */
-            box-shadow: 0 4px 5px rgba(0, 0, 0, 0.1);
-            /* Drop shadow */
-            position: sticky; /* Make the header sticky */
-            top: 0; /* Stick to the top */
-            z-index: 1000; /* Ensure it stays on top of other elements */
-            height: 100px;
-        }
-    
-        .logo-container-mobile {
-            flex-shrink: 0;
-            /* Prevent logo from shrinking */
-        }
-        
-        .logo-container-mobile a {
-            display: flex;
-            align-items: flex-start;
-            height: 64px;
-            /* Set a fixed height */
-        }
-        
-        .logo {
-            height: 100%;
-            /* Use full height of the container */
-        }
-        .logo-drawer {
-            display: flex;
-            align-items: center;
-            height: 64px;
-            /* Use full height of the container */
-        }
-        .menu-desktop {
-            display: none;
-            /* Hide the full menu */
-        }
-    
-        .menu-mobile {
-            display: block;
-            /* Show the hamburger menu */
-        }
-    
-        .menu-container .ant-menu {
-            display: flex;
-            flex-direction: column;
-            /* Stack menu items vertically */
-            align-items: flex-start;
-            /* Align menu items to the right */
-        }
-    
-        .menu-container .ant-menu-item {
-            text-align: flex-start;
-            /* Center align menu items */
-            padding: 10px 0;
-            /* Adjust padding as needed */
-            width: 100%;
-            /* Full width for each menu item */
-        }
 
-        .header-username {
-            display: none;
-        }
-    }
+.menu-mobile {
+  display: none;
+}
+
+.header-user-button {
+  color: #333;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.header-user-button:hover,
+.header-user-button:focus {
+  color: #1890ff;
+  background: transparent;
+}
+
+.header-username {
+  display: inline;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========================================================= */
+/* iPad Portrait & Landscape (768px–1024px) — MOBILE LOGO ONLY */
+/* ========================================================= */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .logo-container-desktop {
+    display: none !important;
+  }
+
+  .mobile-logo-column {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-end !important; /* 👈 pushes logo a bit lower */
+  }
+
+  .logo-container-mobile {
+    flex-shrink: 0;
+    display: flex !important;
+    justify-content: center !important;
+    width: 100%;
+    transform: translateY(6px); /* 👈 fine-tune vertical offset */
+  }
+
+  .logo-container-mobile a {
+    display: flex;
+    align-items: flex-end; /* 👈 aligns image toward lower part */
+    justify-content: center;
+    height: 60px;
+  }
+
+  .logo {
+    height: 60px;
+    width: auto;
+    max-width: 160px;
+    object-fit: contain;
+  }
+
+  .app-header {
+    min-height: 80px;
+    height: auto;
+    padding: 0 20px;
+  }
+
+  .menu-desktop {
+    display: none !important;
+  }
+
+  .menu-mobile {
+    display: inline-flex !important;
+  }
+
+  .header-username {
+    font-size: 14px;
+  }
+}
+
+/* ========================================================= */
+/* Mobile (≤768px)                                            */
+/* ========================================================= */
+
+@media (max-width: 768px) {
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #fff;
+    padding: 0 16px;
+    box-shadow: 0 4px 5px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: auto;
+    min-height: 80px;
+  }
+
+  .mobile-menu-column,
+  .mobile-logo-column,
+  .mobile-user-column {
+    display: flex;
+    align-items: center;
+  }
+
+  .mobile-menu-column {
+    justify-content: flex-start;
+  }
+
+  .mobile-logo-column {
+    justify-content: center;
+    align-items: flex-end; /* 👈 push down logo vertically */
+  }
+
+  .mobile-user-column {
+    justify-content: flex-end;
+  }
+
+  .logo-container-mobile {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    transform: translateY(15px); /* 👈 lower logo slightly */
+  }
+
+  .logo-container-mobile a {
+    display: flex;
+    align-items: flex-end; /* 👈 keep lower alignment */
+    justify-content: center;
+    height: 56px;
+  }
+
+  .logo {
+    height: 56px;
+    max-width: 150px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .logo-drawer {
+    display: flex;
+    align-items: center;
+    height: 56px;
+  }
+
+  .menu-desktop {
+    display: none;
+  }
+
+  .menu-mobile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    height: 44px;
+    border-radius: 999px;
+  }
+
+  .menu-container .ant-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .menu-container .ant-menu-item {
+    padding: 10px 0;
+    width: 100%;
+  }
+
+  .header-user-button {
+    padding: 0 14px;
+    height: 44px;
+    border-radius: 999px;
+  }
+
+  .header-user-button .ant-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .header-user-button .ant-space-item {
+    display: flex;
+    align-items: center;
+  }
+
+  .header-username {
+    display: none;
+  }
+}
+
+/* ========================================================= */
+/* Small Phones (≤430px, e.g., iPhone 12/13/14)               */
+/* ========================================================= */
+
+@media (max-width: 430px) {
+  .app-header {
+    min-height: 72px;
+    padding: 0 12px;
+  }
+
+  .logo-container-mobile a {
+    height: 48px;
+  }
+
+  .logo {
+    height: 48px;
+    max-width: 130px;
+  }
+
+  .logo-container-mobile {
+    transform: translateY(17px); /* 👈 slightly lower on small screens */
+  }
+
+  .menu-mobile {
+    padding: 0 12px;
+    height: 40px;
+  }
+
+  .header-user-button {
+    padding: 0 10px;
+    height: 40px;
+    font-size: 12px;
+  }
+
+  .header-user-button .ant-avatar {
+    width: 24px;
+    height: 24px;
+  }
+
+  .ant-dropdown-menu {
+    min-width: 160px;
+  }
+}
+
+
+/* Move dropdown (user menu) fully to the right on iPad */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Ensure the user column sits at far right */
+  .mobile-user-column {
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center;
+    position: absolute;   /* detach from the center group */
+    right: 24px;          /* push it to the edge */
+    top: 50%;
+    transform: translateY(-50%); /* center vertically */
+  }
+
+  /* Optionally tighten the dropdown button spacing */
+  .header-user-button {
+    padding: 6px 12px;
+  }
+}

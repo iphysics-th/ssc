@@ -1,16 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { Alert, Button, Calendar, Col, message, Row } from 'antd';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Protected from '../../../hooks/userProtected';
 import { useFormData } from '../../../contexts/FormDataContext';
+import { useGetConfirmedReservationsQuery } from '../reservationApiSlice';
 import '../../../css/Reservation/CourseSelection.css';
 
 dayjs.locale('th');
-
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
 const formatBuddhistDate = (value) => {
   const date = dayjs(value);
@@ -34,30 +32,27 @@ const DateSelection = () => {
 
   const [calendarValue, setCalendarValue] = useState(initialDates[0] || dayjs());
   const [selectedDates, setSelectedDates] = useState(initialDates);
-  const [confirmedReservations, setConfirmedReservations] = useState([]);
-  const [processedReservations, setProcessedReservations] = useState([]);
+  const { data: availabilityData } = useGetConfirmedReservationsQuery();
 
-  useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        const response = await axios.get(`${backendUrl}/api/reservation/confirmed`);
-        const confirmed = response.data.confirmed.map((reservation) => ({
-          dates: reservation.selectedDates.map((date) => dayjs(date).format('YYYY-MM-DD')),
-          school: reservation.school,
-        }));
-        const processed = response.data.processed.map((reservation) => ({
-          dates: reservation.selectedDates.map((date) => dayjs(date).format('YYYY-MM-DD')),
-          school: reservation.school,
-        }));
-        setConfirmedReservations(confirmed);
-        setProcessedReservations(processed);
-      } catch (error) {
-        console.error('Error fetching reservations:', error);
-      }
-    };
+  const confirmedReservations = useMemo(() => {
+    if (!availabilityData?.confirmed) {
+      return [];
+    }
+    return availabilityData.confirmed.map((reservation) => ({
+      dates: (reservation.selectedDates || []).map((date) => dayjs(date).format('YYYY-MM-DD')),
+      school: reservation.school,
+    }));
+  }, [availabilityData]);
 
-    fetchReservations();
-  }, []);
+  const processedReservations = useMemo(() => {
+    if (!availabilityData?.processed) {
+      return [];
+    }
+    return availabilityData.processed.map((reservation) => ({
+      dates: (reservation.selectedDates || []).map((date) => dayjs(date).format('YYYY-MM-DD')),
+      school: reservation.school,
+    }));
+  }, [availabilityData]);
 
   const onSelect = (newValue) => {
     const day = newValue.day(); // 0=Sun,6=Sat

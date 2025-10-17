@@ -5,7 +5,7 @@ import { useGoogleLogin } from '@react-oauth/google'; // Import Google Login com
 import { Formik } from 'formik';
 import { FcGoogle } from "react-icons/fc";
 import * as Yup from 'yup';
-import { useLoginMutation, useSocialAuthMutation } from '../authAPI';
+import { useLoginMutation, useSocialAuthMutation } from '../authApiSlice';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import '../../../styles/variables.css';
 

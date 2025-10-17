@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google'; // Import Google Login component
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import { useSignUpMutation, useSocialAuthMutation } from '../authAPI';
+import { useSignUpMutation, useSocialAuthMutation } from '../authApiSlice';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import '../../../styles/variables.css';
 

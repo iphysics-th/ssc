@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Empty, List, Spin, Typography } from 'antd';
-import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { useSelector } from 'react-redux';
+import {
+  useGetMyReservationsQuery,
+  useLazyGetReservationsByEmailQuery,
+} from '../../features/reservation/reservationApiSlice';
 
 dayjs.locale('th');
-
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
 const formatBuddhistDate = (value) => {
   const date = dayjs(value);
@@ -25,79 +26,77 @@ const UserReservations = () => {
   const userEmail = (user?.email || user?.mail || '').trim();
   const username = (user?.username || '').trim();
 
-  const [reservations, setReservations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {
+    data: primaryReservations = [],
+    isLoading: isPrimaryLoading,
+    isError: isPrimaryError,
+  } = useGetMyReservationsQuery();
+
+  const [
+    triggerFallback,
+    {
+      data: fallbackReservations = [],
+      isFetching: isFallbackFetching,
+      isError: isFallbackError,
+    },
+  ] = useLazyGetReservationsByEmailQuery();
+
+  const [hasTriggeredFallback, setHasTriggeredFallback] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   useEffect(() => {
-    let isMounted = true;
+    const shouldTriggerFallback =
+      (isPrimaryError ||
+        (!isPrimaryLoading && Array.isArray(primaryReservations) && primaryReservations.length === 0)) &&
+      (userEmail || username) &&
+      !hasTriggeredFallback;
 
-    const fetchReservations = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await axios.get(`${backendUrl}/api/reservation/my`, {
-          withCredentials: true,
-        });
-        if (!isMounted) return;
-        const data = response.data || [];
-        if (data.length === 0 && (userEmail || username)) {
-          try {
-            const fallbackResponse = await axios.get(`${backendUrl}/api/reservation/by-email`, {
-              params: {
-                email: userEmail || undefined,
-                username: username || undefined,
-              },
-              withCredentials: true,
-            });
-            setReservations(fallbackResponse.data || []);
-            setError(null);
-            return;
-          } catch (fallbackError) {
-            console.error('Fallback reservation fetch failed:', fallbackError);
-            setReservations([]);
-            setError('ไม่สามารถดึงข้อมูลการจองได้');
-            return;
-          }
-        }
-        setReservations(data);
-      } catch (err) {
-        if (!isMounted) {
-          return;
-        }
-        console.error('Primary reservation fetch failed:', err);
-        if (userEmail || username) {
-          try {
-            const fallbackResponse = await axios.get(`${backendUrl}/api/reservation/by-email`, {
-              params: {
-                email: userEmail || undefined,
-                username: username || undefined,
-              },
-              withCredentials: true,
-            });
-            setReservations(fallbackResponse.data || []);
-            setError(null);
-            return;
-          } catch (fallbackError) {
-            console.error('Fallback reservation fetch failed:', fallbackError);
-          }
-        }
-        setError('ไม่สามารถดึงข้อมูลการจองได้');
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+    if (shouldTriggerFallback) {
+      triggerFallback({ email: userEmail || undefined, username: username || undefined });
+      setHasTriggeredFallback(true);
+    }
+  }, [
+    isPrimaryError,
+    isPrimaryLoading,
+    primaryReservations,
+    userEmail,
+    username,
+    hasTriggeredFallback,
+    triggerFallback,
+  ]);
 
-    fetchReservations();
+  useEffect(() => {
+    if (isFallbackError || (isPrimaryError && !hasTriggeredFallback && !(userEmail || username))) {
+      setErrorMessage('ไม่สามารถดึงข้อมูลการจองได้');
+      return;
+    }
 
-    return () => {
-      isMounted = false;
-    };
-  }, [userEmail, username]);
+    if (!isPrimaryLoading && !isFallbackFetching) {
+      setErrorMessage(null);
+    }
+  }, [
+    isFallbackError,
+    isPrimaryError,
+    hasTriggeredFallback,
+    userEmail,
+    username,
+    isPrimaryLoading,
+    isFallbackFetching,
+  ]);
 
-  if (loading) {
+  const reservations = useMemo(() => {
+    if (Array.isArray(primaryReservations) && primaryReservations.length > 0) {
+      return primaryReservations;
+    }
+    if (Array.isArray(fallbackReservations) && fallbackReservations.length > 0) {
+      return fallbackReservations;
+    }
+    return [];
+  }, [primaryReservations, fallbackReservations]);
+
+  const isLoading = isPrimaryLoading || (hasTriggeredFallback && isFallbackFetching);
+
+  if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
         <Spin size="large" />
@@ -105,8 +104,8 @@ const UserReservations = () => {
     );
   }
 
-  if (error) {
-    return <Typography.Text type="danger">{error}</Typography.Text>;
+  if (errorMessage) {
+    return <Typography.Text type="danger">{errorMessage}</Typography.Text>;
   }
 
   if (!reservations.length) {
@@ -197,3 +196,4 @@ const UserReservations = () => {
 };
 
 export default UserReservations;
+

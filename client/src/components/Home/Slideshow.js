@@ -1,72 +1,183 @@
-import React, { useState, useEffect } from 'react';
-import { Carousel } from 'react-responsive-carousel';
-import 'react-responsive-carousel/lib/styles/carousel.min.css';
-import '../../css/Home/Slideshow.css';
-import axios from 'axios'; // Import Axios
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import "../../css/Home/Slideshow.css";
 
+const BANNER_MS = 10000; // 10 s for main banner
+const IMAGE_MS = 10000;  // 10 s per image
+const FADE_MS = 1000;    // 1 s fade duration
 
-const defaultContent = "ศูนย์บริการวิชาการคณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏสงขลา";
-const backendUrl = process.env.REACT_APP_BACKEND_URL; // Ensure this is defined in your .env file
+// Import all images from /src/assets/images/slide
+const heroModules = require.context(
+  "../../assets/images/slide",
+  false,
+  /\.(jpe?g|png|webp)$/i
+);
+const heroFiles = heroModules.keys().map(
+  (k) => heroModules(k).default || heroModules(k)
+);
 
-const Slideshow = () => {
-  const [slides, setSlides] = useState([]);
+export default function Slideshow({
+  videoFile = "ssc-banner.mp4",
+  bannerFile = "ssc-banner.png",
+  maxWidth = 1400,
+}) {
+  const [phase, setPhase] = useState("video"); // "video" | "banner" | "images"
+  const [imageIndex, setImageIndex] = useState(0);
+  const [videoEpoch, setVideoEpoch] = useState(0);
+  const [fadeKey, setFadeKey] = useState(0);
+  const videoRef = useRef(null);
+  const phaseStart = useRef(Date.now());
+  const intervalRef = useRef(null);
 
-  useEffect(() => {
-    const slideNumbers = ['slide1', 'slide2', 'slide3', 'slide4', 'slide5']; // Adjust based on your actual slides
-    const fetchSlides = async () => {
-      const fetchPromises = slideNumbers.map(slideNumber =>
-        axios.get(`${backendUrl}/api/slide/${slideNumber}`).then(response => {
-          const { data } = response;
-          return {
-            title: data.slideHeader,
-            image: `${backendUrl}/${data.slideImage}`, // Adjust if necessary
-            content: data.slideDetail || defaultContent,
-            link: data.slideLink, // Store the slide link
-          };
-        }).catch(error => {
-          console.error(`Error fetching slide ${slideNumber}:`, error);
-          return null; // Handle error or return default content
-        })
-      );
+  // ----------------- Static paths -----------------
+  const videoSrc = useMemo(() => `/slide/${videoFile}`, [videoFile]);
+  const bannerSrc = useMemo(() => `/slide/${bannerFile}`, [bannerFile]);
 
-      Promise.all(fetchPromises).then(fetchedSlides => {
-        setSlides(fetchedSlides.filter(slide => slide !== null)); // Filter out any failed fetches or null values
-      });
-    };
-
-    fetchSlides();
+  // Random rotation images
+  const rotationImages = useMemo(() => {
+    const shuffled = [...heroFiles].sort(() => Math.random() - 0.5);
+    return shuffled;
   }, []);
 
+  // ----------------- Play video -----------------
+  useEffect(() => {
+    if (phase === "video" && videoRef.current) {
+      const vid = videoRef.current;
+      vid.muted = true;
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // fallback if autoplay blocked
+          setTimeout(() => {
+            setPhase("banner");
+            phaseStart.current = Date.now();
+          }, 100);
+        });
+      }
+    }
+  }, [phase]);
+
+  // ----------------- Video end handler -----------------
+  const handleVideoEnd = () => {
+    setPhase("banner");
+    setFadeKey((k) => k + 1); // trigger fade
+    phaseStart.current = Date.now();
+  };
+
+  // ----------------- Autoplay logic -----------------
+  useEffect(() => {
+    if (phase === "video") return;
+
+    intervalRef.current = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - phaseStart.current;
+
+      if (phase === "banner" && elapsed >= BANNER_MS) {
+        if (rotationImages.length > 0) {
+          setPhase("images");
+          setImageIndex(0);
+          setFadeKey((k) => k + 1);
+          phaseStart.current = now;
+        } else {
+          setPhase("video");
+          setVideoEpoch((v) => v + 1);
+          setFadeKey((k) => k + 1);
+          phaseStart.current = now;
+        }
+      } else if (phase === "images" && elapsed >= IMAGE_MS) {
+        const next = imageIndex + 1;
+        if (next < rotationImages.length) {
+          setImageIndex(next);
+          setFadeKey((k) => k + 1);
+          phaseStart.current = now;
+        } else {
+          setPhase("video");
+          setVideoEpoch((v) => v + 1);
+          setFadeKey((k) => k + 1);
+          phaseStart.current = now;
+        }
+      }
+    }, 500);
+
+    return () => clearInterval(intervalRef.current);
+  }, [phase, imageIndex, rotationImages.length]);
+
+  // ----------------- Manual navigation -----------------
+  const goPrev = () => {
+    if (phase !== "images") return;
+    const len = rotationImages.length;
+    const next = imageIndex === 0 ? len - 1 : imageIndex - 1;
+    setImageIndex(next);
+    setFadeKey((k) => k + 1);
+    phaseStart.current = Date.now();
+  };
+
+  const goNext = () => {
+    if (phase !== "images") return;
+    const len = rotationImages.length;
+    const next = imageIndex === len - 1 ? 0 : imageIndex + 1;
+    setImageIndex(next);
+    setFadeKey((k) => k + 1);
+    phaseStart.current = Date.now();
+  };
+
+  // ----------------- Render -----------------
   return (
-    <div className="slideshow-container">
-      <Carousel
-        autoPlay
-        showThumbs={false}
-        showStatus={false}
-        dynamicHeight={false}
-        emulateTouch
-        interval={5000}
-      >
-        {slides.map((slide, index) => (
-          <div key={index} className="carousel-slide">
-            <img src={slide.image} alt={`Slide ${index + 1}`} />
-            <div className="slide-text-container">
-              <div className="slide-text">
-                <h2 className="slide-title">{slide.title}</h2>
-                <h4 className="slide-content">{slide.content}</h4>
-                {/* Add the Read More link */}
-                {slide.link && (
-                  <a href={slide.link} target="_blank" rel="noopener noreferrer" className="slide-read-more">
-                    อ่านเพิ่มเติม คลิกเลย!
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </Carousel>
+    <div
+      className="ssc-hero"
+      style={{ maxWidth, margin: "0 auto", position: "relative" }}
+    >
+      {/* MEDIA FADE CONTAINER */}
+      <div key={fadeKey} className="fade-container">
+        {phase === "video" && (
+          <video
+            key={`video-${videoEpoch}`}
+            ref={videoRef}
+            src={videoSrc}
+            className="ssc-hero__media fade-in"
+            muted
+            playsInline
+            onEnded={handleVideoEnd}
+            onError={handleVideoEnd}
+          />
+        )}
+
+        {phase === "banner" && (
+          <img
+            src={bannerSrc}
+            alt="Main banner"
+            className="ssc-hero__media fade-in"
+          />
+        )}
+
+        {phase === "images" && rotationImages.length > 0 && (
+          <img
+            src={rotationImages[imageIndex]}
+            alt={`Slide ${imageIndex + 1}`}
+            className="ssc-hero__media fade-in"
+          />
+        )}
+      </div>
+
+      {/* CONTROLS */}
+      {phase === "images" && rotationImages.length > 1 && (
+        <>
+          <button
+            className="ssc-hero__btn ssc-hero__btn--left"
+            onClick={goPrev}
+            aria-label="Previous"
+          >
+            <FaChevronLeft />
+          </button>
+          <button
+            className="ssc-hero__btn ssc-hero__btn--right"
+            onClick={goNext}
+            aria-label="Next"
+          >
+            <FaChevronRight />
+          </button>
+        </>
+      )}
     </div>
   );
-};
-
-export default Slideshow;
+}

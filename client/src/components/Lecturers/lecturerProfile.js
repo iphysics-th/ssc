@@ -1,22 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../../css/Lecturers/lecturerProfile.css';
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
+import { useGetLecturerProfileQuery } from '../../features/lecturer/lecturerApiSlice';
 
 
 const LecturerProfile = () => {
-    const [lecturer, setLecturer] = useState(null);
     const { division_en, name_en } = useParams();
     const navigate = useNavigate();
-
-    useEffect(() => {
-        fetch(`${backendUrl}/api/lecturer/divisions/${division_en}/${name_en}`)
-            .then(response => response.json())
-            .then(data => setLecturer(data))
-            .catch(error => console.error('Error:', error));
-    }, [division_en, name_en]);
+    const { data: lecturer, isLoading, error } = useGetLecturerProfileQuery(
+        { division: division_en, name: name_en },
+        { skip: !division_en || !name_en }
+    );
 
     const getThaiTitle = () => {
+        if (!lecturer) {
+            return '';
+        }
         let title = '';
         switch (lecturer.position_en) {
             case 'Lecturer': title = 'อ.'; break;
@@ -32,6 +31,9 @@ const LecturerProfile = () => {
     };
 
     const getEnglishTitle = () => {
+        if (!lecturer) {
+            return '';
+        }
         let title = '';
         switch (lecturer.position_en) {
             case 'Assistant Professor': title = 'Asst. Prof. '; break;
@@ -67,6 +69,8 @@ const LecturerProfile = () => {
             <div className="navigation">
                 <button onClick={goBack} className="back-button">กลับไปหน้าก่อน</button>
             </div>
+            {isLoading && <p style={{ textAlign: 'center' }}>กำลังโหลดข้อมูล...</p>}
+            {error && <p style={{ textAlign: 'center', color: 'red' }}>ไม่สามารถโหลดข้อมูลอาจารย์ได้</p>}
             {lecturer && (
                 <div className="lecturer-profile">
                     <div className="left-column">

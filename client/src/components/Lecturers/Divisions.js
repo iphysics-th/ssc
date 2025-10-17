@@ -1,22 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../css/Lecturers/Division.css';
+import { useGetDivisionsQuery } from '../../features/lecturer/lecturerApiSlice';
 
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
 const Divisions = () => {
-    const [divisions, setDivisions] = useState([]);
+    const { data: divisions = [], isLoading, error } = useGetDivisionsQuery();
     const navigate = useNavigate();
-
-    useEffect(() => {
-        fetch(`${backendUrl}/api/lecturer/divisions`)
-            .then(response => response.json())
-            .then(data => {
-                // Sort divisions by division_th in Thai dictionary order
-                const sortedData = data.sort((a, b) => a.division_th.localeCompare(b.division_th, 'th'));
-                setDivisions(sortedData);
-            })
-            .catch(error => console.error('Error fetching divisions:', error));
-    }, []);
 
     const goHome = () => {
         navigate('/');
@@ -28,6 +17,8 @@ const Divisions = () => {
                 <button onClick={goHome} className="back-button">กลับไปหน้าหลัก</button>
             </div>
             <h1>สาขาวิชา (Divisions)</h1>
+            {isLoading && <p style={{ textAlign: 'center' }}>กำลังโหลดข้อมูล...</p>}
+            {error && <p style={{ textAlign: 'center', color: 'red' }}>ไม่สามารถโหลดข้อมูลสาขาได้</p>}
             <div className="division-grid">
                 {divisions.map((division, index) => (
                     <Link to={`/divisions/${division.division_en}`} key={index} className="division-box">

@@ -1,24 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import '../../css/Lecturers/DivisionDetail.css';
-
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
+import { useGetDivisionDetailsQuery } from '../../features/lecturer/lecturerApiSlice';
 
 const DivisionDetail = () => {
-    const [divisionDetails, setDivisionDetails] = useState([]);
     const { division_en } = useParams();
     const navigate = useNavigate();
-
-    useEffect(() => {
-        fetch(`${backendUrl}/api/lecturer/divisions/${division_en}`)
-            .then(response => response.json())
-            .then(data => {
-                // Sort by bachelor_year
-                const sortedData = data.sort((a, b) => a.bachelor_year - b.bachelor_year);
-                setDivisionDetails(sortedData);
-            })
-            .catch(error => console.error('Error:', error));
-    }, [division_en]);
+    const {
+        data: divisionDetails = [],
+        isLoading,
+        error,
+    } = useGetDivisionDetailsQuery(division_en, { skip: !division_en });
 
     const getTitle = (lecturer) => {
         let title = '';
@@ -59,6 +51,8 @@ const DivisionDetail = () => {
             <div className="navigation">
                 <button onClick={goBack} className="back-button">กลับไปหน้าก่อน</button>
             </div>
+            {isLoading && <p style={{ textAlign: 'center' }}>กำลังโหลดข้อมูล...</p>}
+            {error && <p style={{ textAlign: 'center', color: 'red' }}>ไม่สามารถโหลดข้อมูลอาจารย์ได้</p>}
             {divisionDetails.length > 0 && (
                 <div className="division-header">
                     <h1>{divisionDetails[0].division_th} <br></br>({division_en})</h1>

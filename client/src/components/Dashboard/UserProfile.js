@@ -1,97 +1,102 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Avatar, Card, Col, Form, Input, Row, Select, Space, Typography, message, Button } from 'antd';
-import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { useFormData } from '../../contexts/FormDataContext';
+import {
+  useGetUserProfileQuery,
+  useUpdateUserProfileMutation,
+} from '../../features/auth/authApiSlice';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
 const UserProfile = () => {
   const [form] = Form.useForm();
   const auth = useSelector((state) => state.auth);
   const { updateFormData } = useFormData();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [accountInfo, setAccountInfo] = useState(null);
-  const [reservationProfile, setReservationProfile] = useState(null);
+
+  const {
+    data: profileData,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useGetUserProfileQuery();
+  const [updateUserProfile, { isLoading: isSaving }] = useUpdateUserProfileMutation();
+
+  const accountInfo = useMemo(() => {
+    if (profileData?.account) {
+      return profileData.account;
+    }
+    return typeof auth.user === 'object' ? auth.user : null;
+  }, [profileData, auth.user]);
 
   useEffect(() => {
-    let mounted = true;
-    const fetchProfile = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(`${backendUrl}/api/user/profile`, {
-          withCredentials: true,
-        });
-        if (!mounted) return;
-        const { account, reservationProfile: profile } = response.data || {};
-        setAccountInfo(account || null);
-        setReservationProfile(profile || null);
-        if (profile) {
-          form.setFieldsValue(profile);
-          updateFormData({ ...profile, __profilePrefilled: true });
-        } else {
-          const defaults = {
-            name: account?.name || '',
-            mail: account?.email || '',
-          };
-          form.setFieldsValue(defaults);
-          updateFormData({ ...defaults, __profilePrefilled: true });
-        }
-      } catch (error) {
-        if (mounted) {
-          console.error('Failed to fetch profile', error);
-          setAccountInfo(null);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
+    if (!profileData) {
+      return;
+    }
 
-    fetchProfile();
-    return () => {
-      mounted = false;
-    };
-  }, [form, updateFormData]);
+    const reservationProfile = profileData?.reservationProfile;
+    if (reservationProfile) {
+      form.setFieldsValue(reservationProfile);
+      updateFormData({ ...reservationProfile, __profilePrefilled: true });
+      return;
+    }
+
+    if (profileData?.account) {
+      const defaults = {
+        name: profileData.account?.name || '',
+        mail: profileData.account?.email || '',
+      };
+      form.setFieldsValue(defaults);
+      updateFormData({ ...defaults, __profilePrefilled: true });
+    }
+  }, [profileData, form, updateFormData]);
+
+  useEffect(() => {
+    if (error) {
+      console.error('Failed to fetch profile', error);
+      message.error('ไม่สามารถดึงข้อมูลโปรไฟล์ได้');
+    }
+  }, [error]);
 
   const handleSubmit = async (values) => {
-    setSaving(true);
     try {
-      const response = await axios.put(
-        `${backendUrl}/api/user/profile`,
-        values,
-        { withCredentials: true }
-      );
-      const { reservationProfile: profile } = response.data || {};
-      setReservationProfile(profile || values);
-      updateFormData({ ...values, __profilePrefilled: true });
+      const result = await updateUserProfile(values).unwrap();
+      const reservationProfile = result?.reservationProfile || values;
+      updateFormData({ ...reservationProfile, __profilePrefilled: true });
       message.success('บันทึกข้อมูลสำเร็จ');
-    } catch (error) {
-      console.error('Failed to save profile', error);
+      refetch();
+    } catch (err) {
+      console.error('Failed to save profile', err);
       message.error('ไม่สามารถบันทึกข้อมูลได้');
-    } finally {
-      setSaving(false);
     }
   };
 
-  const displayAccount = accountInfo || (typeof auth.user === 'object' ? auth.user : null);
-  const displayRoles = Array.isArray(displayAccount?.roles) ? displayAccount.roles : [];
+  const displayRoles = useMemo(() => {
+    if (!accountInfo) {
+      return [];
+    }
+    if (Array.isArray(accountInfo.roles)) {
+      return accountInfo.roles;
+    }
+    if (typeof accountInfo.role === 'string') {
+      return [accountInfo.role];
+    }
+    return [];
+  }, [accountInfo]);
 
   return (
     <div>
       <Title level={3} className="dashboard-section-title">ข้อมูลบัญชีผู้ใช้</Title>
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={10}>
-          <Card loading={loading} bordered>
+          <Card loading={isLoading} bordered>
             <Space align="start" size="large">
-              <Avatar size={64} src={displayAccount?.avatar} icon={!displayAccount?.avatar && undefined} />
+              <Avatar size={64} src={accountInfo?.avatar} />
               <div>
-                <Title level={4} style={{ margin: 0 }}>{displayAccount?.username || displayAccount?.name || '-'}</Title>
-                <Text type="secondary">{displayAccount?.email || '-'}</Text>
+                <Title level={4} style={{ margin: 0 }}>{accountInfo?.username || accountInfo?.name || '-'}</Title>
+                <Text type="secondary">{accountInfo?.email || '-'}</Text>
                 <div style={{ marginTop: 8 }}>
                   <Text strong>สิทธิ์:</Text>{' '}
                   {displayRoles.length ? displayRoles.join(', ') : 'member'}
@@ -101,11 +106,10 @@ const UserProfile = () => {
           </Card>
         </Col>
         <Col xs={24} lg={14}>
-          <Card title="ข้อมูลสำหรับการจอง" bordered>
+          <Card title="ข้อมูลสำหรับการจอง" bordered loading={isFetching && !profileData}>
             <Form
               form={form}
               layout="vertical"
-              initialValues={reservationProfile || {}}
               onFinish={handleSubmit}
             >
               <Row gutter={16}>
@@ -205,10 +209,13 @@ const UserProfile = () => {
               </Row>
               <Form.Item>
                 <Space>
-                  <Button type="primary" htmlType="submit" loading={saving}>
+                  <Button type="primary" htmlType="submit" loading={isSaving}>
                     บันทึกข้อมูล
                   </Button>
-                  <Button onClick={() => form.resetFields()} disabled={saving}>
+                  <Button
+                    onClick={() => form.resetFields()}
+                    disabled={isSaving}
+                  >
                     ล้างข้อมูล
                   </Button>
                 </Space>
@@ -222,3 +229,4 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
+

@@ -140,21 +140,14 @@
 │   │   ├── ssc.ico
 │   │   ├── static
 │   │   │   ├── css
-│   │   │   │   ├── main.51218fcc.css
-│   │   │   │   ├── main.51218fcc.css.map
-│   │   │   │   ├── main.f5e1817d.css
-│   │   │   │   └── main.f5e1817d.css.map
+│   │   │   │   ├── main.fa13fee3.css
+│   │   │   │   └── main.fa13fee3.css.map
 │   │   │   ├── js
-│   │   │   │   ├── 453.258b012d.chunk.js
-│   │   │   │   ├── 453.258b012d.chunk.js.map
 │   │   │   │   ├── 453.d456ce70.chunk.js
 │   │   │   │   ├── 453.d456ce70.chunk.js.map
-│   │   │   │   ├── main.4bf6f941.js
-│   │   │   │   ├── main.4bf6f941.js.LICENSE.txt
-│   │   │   │   ├── main.4bf6f941.js.map
-│   │   │   │   ├── main.a04cc0fe.js
-│   │   │   │   ├── main.a04cc0fe.js.LICENSE.txt
-│   │   │   │   └── main.a04cc0fe.js.map
+│   │   │   │   ├── main.ac511c5c.js
+│   │   │   │   ├── main.ac511c5c.js.LICENSE.txt
+│   │   │   │   └── main.ac511c5c.js.map
 │   │   │   └── media
 │   │   │       └── AboutUs.655c6d48282e7ed7dbfc.png
 │   │   ├── STEM_SSC.webp
@@ -286,12 +279,12 @@
 │   │   │   ├── stem-ssc.png
 │   │   │   ├── stem-ssc2.png
 │   │   │   └── stem-ssc3.png
-│   │   ├── slides
-│   │   │   └── slide1.jpg
+│   │   ├── slide
+│   │   │   ├── ssc-banner.mp4
+│   │   │   └── ssc-banner.png
 │   │   ├── slideshow
 │   │   │   ├── blank.txt
 │   │   │   ├── HAND to SCI.jpg
-│   │   │   ├── SCICAMP-SSC.jpg
 │   │   │   ├── SCIENTEREST.jpg
 │   │   │   ├── Sparkling Science Center.jpg
 │   │   │   ├── Sparkling Science Center.txt
@@ -302,23 +295,28 @@
 │   │   └── utility
 │   │       └── calculation.jpg
 │   ├── README.md
+│   ├── refactor_structure.js
 │   └── src
+│       ├── app
+│       │   ├── apiClient.js
+│       │   ├── hooks.js
+│       │   └── store.js
 │       ├── App.css
 │       ├── App.js
 │       ├── App.test.js
-│       ├── AppFooter.js
 │       ├── AppHeader.css
-│       ├── AppHeader.js
 │       ├── assets
-│       │   └── AboutUs.png
+│       │   ├── AboutUs.png
+│       │   ├── icons
+│       │   └── images
+│       │       └── slide
+│       │           └── SCICAMP-SSC.jpg
 │       ├── Booking.js
 │       ├── components
 │       │   ├── Admin
 │       │   │   ├── reservationData.js
 │       │   │   └── slideUpload.js
 │       │   ├── Auth
-│       │   │   ├── signin.js
-│       │   │   ├── signup.js
 │       │   │   └── socialsignin.js
 │       │   ├── Dashboard
 │       │   │   ├── Dashboard.css
@@ -342,16 +340,7 @@
 │       │   │   │   └── EduResearch.js
 │       │   │   └── Other
 │       │   ├── Reservation
-│       │   │   ├── CourseSelection.js
-│       │   │   ├── DateSelection.js
-│       │   │   ├── ReservationSetup.js
-│       │   │   ├── ReserveCheck.js
-│       │   │   ├── StepNavigation.js
-│       │   │   ├── SubjectSelection.js
-│       │   │   ├── SubjectSelectionModal.js
-│       │   │   ├── SummaryPage.js
-│       │   │   ├── test
-│       │   │   └── UserInfoForm.js
+│       │   │   └── ReservationSetup.js
 │       │   └── Services
 │       │       ├── Services.js
 │       │       └── STEMSSC.js
@@ -364,10 +353,8 @@
 │       │   │   ├── reservationData.css
 │       │   │   └── slideUpload.css
 │       │   ├── Auth
-│       │   │   ├── signup.css
 │       │   │   └── socialsignin.css
 │       │   ├── Home
-│       │   │   ├── AboutUs.css
 │       │   │   ├── IntroComponent.css
 │       │   │   ├── ServicesHome.css
 │       │   │   └── Slideshow.css
@@ -385,27 +372,43 @@
 │       │   │   └── SummaryPage.css
 │       │   └── Services
 │       │       └── STEMSSCDetail.css
+│       ├── features
+│       │   ├── auth
+│       │   │   ├── authAPI.js
+│       │   │   ├── authSlice.js
+│       │   │   └── components
+│       │   │       ├── SignInForm.jsx
+│       │   │       └── SignUpForm.jsx
+│       │   └── reservation
+│       │       ├── components
+│       │       │   ├── SlotCard.jsx
+│       │       │   └── SubjectModal.jsx
+│       │       └── pages
+│       │           ├── ReviewSummary.jsx
+│       │           ├── SelectDate.jsx
+│       │           ├── SelectDuration.jsx
+│       │           ├── SelectSubjects.jsx
+│       │           ├── Success.jsx
+│       │           └── UserInfo.jsx
 │       ├── FinishPage.js
 │       ├── Home.js
 │       ├── hooks
 │       │   ├── adminProtected.js
 │       │   ├── checkAdminStatus
 │       │   ├── useAdminAuth.js
-│       │   ├── userAuth.js
 │       │   └── userProtected.js
 │       ├── index.css
 │       ├── index.js
+│       ├── layouts
+│       │   ├── Footer.jsx
+│       │   └── Header.jsx
 │       ├── logo.svg
 │       ├── logossc.svg
-│       ├── redux
-│       │   ├── api
-│       │   │   └── apiSlice.js
-│       │   ├── auth
-│       │   │   ├── authApi.js
-│       │   │   └── authSlice.js
-│       │   └── store.js
 │       ├── reportWebVitals.js
-│       └── setupTests.js
+│       ├── setupTests.js
+│       └── styles
+│           ├── global.css
+│           └── variables.css
 ├── combined.crt
 ├── commit_script.sh
 ├── package-lock.json
@@ -470,4 +473,4 @@
 └── Test API
     └── apis.txt
 
-64 directories, 407 files
+73 directories, 401 files

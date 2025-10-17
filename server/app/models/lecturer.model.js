@@ -26,7 +26,7 @@ module.exports = mongoose => {
         patent: [String], // Array of strings for sub-parameters
         email: String
       },
-      { timestamps: true }
+      { timestamps: true, collection: "lecturer" }
     );
   
     schema.method("toJSON", function() {
@@ -35,9 +35,8 @@ module.exports = mongoose => {
       return object;
     });
   
-    const Lecturer = mongoose.model("lecturer", schema);
+    const Lecturer = mongoose.model("Lecturer", schema);
     return Lecturer;
 };
-
 
 

@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Popconfirm, Select, Space, Spin, Table, Typography, message } from 'antd';
-import axios from 'axios';
-
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
+import {
+  useDeleteUserMutation,
+  useGetUsersQuery,
+  useUpdateUserRoleMutation,
+} from '../../features/admin/adminApiSlice';
 
 const roleOptions = [
   { value: 'member', label: 'สมาชิก' },
@@ -10,66 +12,64 @@ const roleOptions = [
 ];
 
 const UserManagement = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(null);
+  const {
+    data: usersData = [],
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useGetUsersQuery();
+  const [updateUserRole] = useUpdateUserRoleMutation();
+  const [deleteUser] = useDeleteUserMutation();
 
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(`${backendUrl}/api/admin/users`, {
-        withCredentials: true,
-      });
-      setUsers(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-      message.error('ไม่สามารถดึงข้อมูลผู้ใช้ได้');
-    } finally {
-      setLoading(false);
+  const users = useMemo(() => {
+    if (!Array.isArray(usersData)) {
+      return [];
     }
-  }, []);
+
+    return usersData.map((user) => ({
+      ...user,
+      key: user.id ?? user._id,
+    }));
+  }, [usersData]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (error) {
+      console.error('Failed to fetch users:', error);
+      message.error('ไม่สามารถดึงข้อมูลผู้ใช้ได้');
+    }
+  }, [error]);
 
-  const handleRoleChange = useCallback(async (userId, role) => {
+  const handleRoleChange = async (userId, role) => {
     setUpdating(userId);
     try {
-      await axios.put(
-        `${backendUrl}/api/admin/users/${userId}/role`,
-        { role },
-        { withCredentials: true }
-      );
+      await updateUserRole({ userId, role }).unwrap();
       message.success('อัปเดตสิทธิ์เรียบร้อย');
-      fetchUsers();
-    } catch (error) {
-      console.error('Failed to update role:', error);
+    } catch (err) {
+      console.error('Failed to update role:', err);
       message.error('ไม่สามารถอัปเดตสิทธิ์ได้');
     } finally {
       setUpdating(null);
     }
-  }, [fetchUsers]);
+  };
 
-  const handleDelete = useCallback(async (userId) => {
+  const handleDelete = async (userId) => {
     setUpdating(userId);
     try {
-      await axios.delete(`${backendUrl}/api/admin/users/${userId}`, {
-        withCredentials: true,
-      });
+      await deleteUser(userId).unwrap();
       message.success('ลบผู้ใช้เรียบร้อย');
-      setUsers((prev) => prev.filter((user) => user.id !== userId));
-    } catch (error) {
-      console.error('Failed to delete user:', error);
-      const msg =
-        error?.response?.data?.message === 'Cannot delete your own account'
+    } catch (err) {
+      console.error('Failed to delete user:', err);
+      const messageKey =
+        err?.data?.message === 'Cannot delete your own account'
           ? 'ไม่สามารถลบบัญชีของตัวเองได้'
           : 'ไม่สามารถลบผู้ใช้ได้';
-      message.error(msg);
+      message.error(messageKey);
     } finally {
       setUpdating(null);
     }
-  }, []);
+  };
 
   const columns = useMemo(
     () => [
@@ -94,9 +94,9 @@ const UserManagement = () => {
             <Select
               value={currentRole}
               style={{ width: 160 }}
-              onChange={(value) => handleRoleChange(record.id, value)}
+              onChange={(value) => handleRoleChange(record.id ?? record._id, value)}
               options={roleOptions}
-              loading={updating === record.id}
+              loading={updating === (record.id ?? record._id)}
             />
           );
         },
@@ -109,11 +109,11 @@ const UserManagement = () => {
             <Popconfirm
               title="ยืนยันการลบผู้ใช้"
               description="คุณต้องการลบผู้ใช้นี้หรือไม่?"
-              onConfirm={() => handleDelete(record.id)}
+              onConfirm={() => handleDelete(record.id ?? record._id)}
               okText="ลบ"
               cancelText="ยกเลิก"
             >
-              <Button danger loading={updating === record.id}>
+              <Button danger loading={updating === (record.id ?? record._id)}>
                 ลบผู้ใช้
               </Button>
             </Popconfirm>
@@ -129,16 +129,22 @@ const UserManagement = () => {
       <Typography.Title level={3} className="dashboard-section-title">
         จัดการผู้ใช้
       </Typography.Title>
-      {loading ? (
+      {isLoading ? (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
           <Spin size="large" />
         </div>
       ) : (
         <Table
-          dataSource={users.map((user) => ({ ...user, key: user.id }))}
+          dataSource={users}
           columns={columns}
           pagination={{ pageSize: 10 }}
           locale={{ emptyText: 'ไม่พบข้อมูลผู้ใช้' }}
+          loading={isFetching}
+          onChange={() => {
+            if (!isFetching) {
+              refetch();
+            }
+          }}
         />
       )}
     </div>

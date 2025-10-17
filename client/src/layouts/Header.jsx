@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Layout, Menu, Button, Drawer, Row, Col, notification, Dropdown, Avatar, Space } from 'antd';
 import { DownOutlined, UserOutlined, LoginOutlined, FormOutlined, DashboardOutlined, LogoutOutlined } from '@ant-design/icons';
 import '../AppHeader.css';
-import { useLogOutMutation } from '../features/auth/authAPI';
+import { useLogOutMutation } from '../features/auth/authApiSlice';
 import { userLoggedOut } from '../features/auth/authSlice';
 
 const { Header } = Layout;
@@ -111,11 +111,11 @@ const AppHeader = () => {
                     </Menu>
                 </Col>
 
-                <Col xs={5} md={0}>
+                <Col xs={6} md={0} className="mobile-menu-column">
                     <Button className="menu-mobile" onClick={showDrawer}>Menu</Button>
                 </Col>
 
-                <Col xs={5} md={0} offset={3}>
+                <Col xs={12} md={0} className="mobile-logo-column">
                     <div className="logo-container-mobile">
                         <Link to="/">
                             <img src="/logo_ssc.svg" alt="Logo" className="logo" />
@@ -164,7 +164,7 @@ const AppHeader = () => {
                     </Menu>
                 </Drawer>
 
-                <Col xs={9} md={3} style={{ textAlign: 'right' }}>
+                <Col xs={6} md={3} className="mobile-user-column" style={{ textAlign: 'right' }}>
                     <Dropdown
                         menu={isAuthenticated ? { items: userMenuItems, onClick: handleUserMenuClick } : { items: guestMenuItems }}
                         placement="bottomRight"

@@ -2,18 +2,22 @@ import React, { useEffect } from 'react';
 import { Form, Input, Button, Select, Card } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import axios from 'axios';
 import { useFormData } from '../../../contexts/FormDataContext';
+import { useGetUserProfileQuery } from '../../auth/authApiSlice';
 
 const { Option } = Select;
-
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
 const UserInfoForm = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const { formData, updateFormData } = useFormData();
   const auth = useSelector((state) => state.auth);
+  const shouldPrefill = auth?.isAuthenticated && !formData.__profilePrefilled;
+  const {
+    data: profileData,
+    isFetching: isProfileFetching,
+    error: profileError,
+  } = useGetUserProfileQuery(undefined, { skip: !shouldPrefill });
 
   useEffect(() => {
     // Set form fields with context data when the component mounts or formData updates
@@ -32,31 +36,28 @@ const UserInfoForm = () => {
   };
 
   useEffect(() => {
-    const shouldPrefill = auth?.isAuthenticated && !formData.__profilePrefilled;
-    if (!shouldPrefill) {
+    if (!shouldPrefill || isProfileFetching) {
       return;
     }
 
-    const fetchProfile = async () => {
-      try {
-        const response = await axios.get(`${backendUrl}/api/user/profile`, {
-          withCredentials: true,
-        });
-        const profile = response.data?.reservationProfile;
-        if (profile) {
-          form.setFieldsValue(profile);
-          updateFormData({ ...profile, __profilePrefilled: true });
-        } else {
-          updateFormData({ __profilePrefilled: true });
-        }
-      } catch (error) {
-        console.error('Failed to hydrate profile', error);
-        updateFormData({ __profilePrefilled: true });
-      }
-    };
+    const profile = profileData?.reservationProfile;
+    if (profile) {
+      form.setFieldsValue(profile);
+      updateFormData({ ...profile, __profilePrefilled: true });
+    } else if (profileData) {
+      updateFormData({ __profilePrefilled: true });
+    }
+  }, [shouldPrefill, isProfileFetching, profileData, form, updateFormData]);
 
-    fetchProfile();
-  }, [auth?.isAuthenticated, form, formData.__profilePrefilled, updateFormData]);
+  useEffect(() => {
+    if (!shouldPrefill && !profileError) {
+      return;
+    }
+    if (profileError && !isProfileFetching) {
+      console.error('Failed to hydrate profile', profileError);
+      updateFormData({ __profilePrefilled: true });
+    }
+  }, [profileError, isProfileFetching, shouldPrefill, updateFormData]);
 
   return (
     <Card style={{ maxWidth: '600px', margin: 'auto', padding: '20px' }}>

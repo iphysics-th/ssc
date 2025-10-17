@@ -1,115 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;700&display=swap');
-
-.slideshow-container .carousel .carousel-slide {
-    position: relative;
-    display: flex;
-    align-items: center; /* Aligns text vertically */
+.ssc-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 20 / 9;     /* modern browsers */
+  background: #000;
+  overflow: hidden;
 }
 
-.slideshow-container .carousel .carousel-slide img {
-    width: 100%;
-    height: auto; /* Adjust height automatically */
-}
-
-/* Semi-transparent overlay for the entire slide */
-.slideshow-container .carousel .carousel-slide::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.4); /* Semi-transparent black */
-    z-index: 1; /* Ensure it's above the image */
-}
-
-.slideshow-container .carousel .slide-text-container {
-    position: absolute;
-    left: 0;
-    bottom: 35%;
-    width: 50%; /* Occupies left half of the slide */
-    z-index: 2; /* Above the overlay */
-    font-family: 'Prompt', sans-serif; /* Apply Prompt font */
-}
-
-.slideshow-container .carousel .slide-title {
-    color: #fff89b; /* White text color */
-    margin-left: 7%; /* Text padding from the left */
-    z-index: 2; /* Ensure text is above the overlay */
-    font-size: 50px; /* Adjust as needed */
-    animation: slideUpTitle 1s ease-out;
-}
-
-.slideshow-container .carousel .slide-content, .slide-read-more {
-    color: #fff; /* White text color */
-    margin-left: 7%; /* Text padding from the left for slide content */
-    z-index: 2; /* Ensure text is above the overlay */
-    font-size: 20px; /* Adjust as needed */
-    animation: slideUpContent 1.2s ease-out;
-    font-family: 'Prompt', sans-serif; /* Apply Prompt font to content and read more link */
-}
-
-@keyframes slideUpTitle {
-    0% {
-        transform: translateY(100%);
-        opacity: 0;
-        filter: blur(10px);
-    }
-    100% {
-        transform: translateY(0);
-        opacity: 1;
-        filter: blur(0);
-    }
-}
-
-@keyframes slideUpContent {
-    0% {
-        transform: translateY(100%);
-        opacity: 0;
-        filter: blur(10px);
-    }
-    100% {
-        transform: translateY(0);
-        opacity: 1;
-        filter: blur(0);
-    }
-}
-
-/* Delay the animation for slide content */
-.slideshow-container .carousel .slide-content {
-    animation-delay: 0.5s;
-}
-
-.slide-read-more {
+.ssc-hero__media {
   position: absolute;
-  bottom: -100%; /* Adjust position to show on the bottom right */
-  right: -100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Optional: Adds contrast */
-  padding: 5px;
-  text-decoration: none;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .slideshow-container .carousel .slide-text-container {
-        width: 100%; /* Full width on smaller screens */
-        bottom: 10%; /* Adjust position for better visibility */
-        font-size: 20px; /* Smaller font size for text container on smaller screens */
-    }
-
-    .slideshow-container .carousel .slide-title {
-        font-size: 35px; /* Adjust title font size on smaller screens */
-        margin-left: 5%; /* Optionally adjust the left margin */
-    }
-
-    .slideshow-container .carousel .slide-content, .slide-read-more {
-        font-size: 16px; /* Adjust content and read more link font size on smaller screens */
-        margin-left: 5%; /* Optionally adjust the left margin for slide content */
-    }
-
-    .slide-read-more {
-        bottom: 5%; /* Adjust position to show on the bottom */
-        right: 5%;
-        padding: 10px; /* Optionally adjust padding */
-    }
+/* Controls */
+.ssc-hero__btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  padding: 10px 12px;
+  border-radius: 9999px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  cursor: pointer;
+  line-height: 0;
 }
+.ssc-hero__btn:hover { background: rgba(0,0,0,0.8); }
+.ssc-hero__btn--left  { left: 16px; }
+.ssc-hero__btn--right { right: 16px; }

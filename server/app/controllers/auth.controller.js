@@ -153,21 +153,27 @@ exports.refreshToken = (req, res) => {
   const refreshToken = req.cookies.refreshToken;
 
   if (!refreshToken) {
-    return res.status(403).send({ message: "Refresh Token is required!" });
+    return res.status(401).send({ message: "Refresh token missing" });
   }
 
   jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
     if (err) {
-      return res.status(403).send({ message: "Invalid Refresh Token!" });
+      return res.status(401).send({ message: "Invalid refresh token" });
+    }
+
+    const userId = decoded.id;
+
+    if (!userId) {
+      return res.status(401).send({ message: "Invalid refresh token payload" });
     }
 
     // Generate a new access token
-    const newAccessToken = jwt.sign({ id: decoded.id }, process.env.ACCESS_TOKEN_SECRET, {
+    const newAccessToken = jwt.sign({ id: userId }, process.env.ACCESS_TOKEN_SECRET, {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRE // Ensure this is in seconds
     });
 
     // Convert ACCESS_TOKEN_EXPIRE from seconds to milliseconds for maxAge
-    const accessTokenExpireTime = process.env.ACCESS_TOKEN_EXPIRE ? parseInt(process.env.ACCESS_TOKEN_EXPIRE) * 1000 : 300000; // Default 5 minutes if not set
+    const accessTokenExpireTime = process.env.ACCESS_TOKEN_EXPIRE ? parseInt(process.env.ACCESS_TOKEN_EXPIRE, 10) * 1000 : 300000; // Default 5 minutes if not set
 
     // Add secure and SameSite attributes if your site is served over HTTPS
     const cookieOptions = {
@@ -268,6 +274,4 @@ exports.socialSignIn = async (req, res) => {
     return res.status(401).send({ message: "Unable to process the request." });
   }
 };
-
-
 

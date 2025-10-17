@@ -21,6 +21,6 @@ module.exports = function(app) {
 
   app.get("/api/auth/verify", authJwt.verifyToken, controller.verifySession);
 
-  // Ensure this matches the path you're requesting exactly
-  app.get("/api/auth/refreshtoken", authJwt.verifyToken, controller.refreshToken);
+  // Refresh endpoint uses refresh token only, no access token required
+  app.get("/api/auth/refreshtoken", controller.refreshToken);
 };

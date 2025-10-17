@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Col, Form, InputNumber, Modal, Row, Select } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import Protected from '../../hooks/userProtected';
 import { useFormData } from '../../contexts/FormDataContext';
 import '../../css/Reservation/CourseSelection.css';
-
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
+import { useLazyCheckReservationNumberQuery } from '../../features/reservation/reservationApiSlice';
 
 const dayOptions = [
   { value: '0.5', label: '0.5 วัน' },
@@ -25,6 +23,7 @@ const classOptions = Array.from({ length: 5 }, (_, index) => {
 const ReservationSetup = () => {
   const navigate = useNavigate();
   const { formData, updateFormData } = useFormData();
+  const [triggerReservationCheck] = useLazyCheckReservationNumberQuery();
 
   const [numberOfDays, setNumberOfDays] = useState(String(formData.numberOfDays || '1'));
   const [numberOfClasses, setNumberOfClasses] = useState(
@@ -39,8 +38,8 @@ const ReservationSetup = () => {
 
   const checkReservationNumberUnique = async (reservationNumber) => {
     try {
-      const response = await axios.get(`${backendUrl}/api/reservation/check/${reservationNumber}`);
-      return !response.data.exists;
+      const response = await triggerReservationCheck(reservationNumber).unwrap();
+      return !response?.exists;
     } catch (error) {
       console.error('Error checking reservation number:', error);
       return false;

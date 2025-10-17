@@ -1,6 +1,6 @@
 "use client";
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
-import { apiSlice } from "./apiClient";
+import { apiSlice } from "./apiSlice";
 import authSlice from "../features/auth/authSlice";
 import {
   persistStore,
@@ -19,6 +19,7 @@ const persistConfig = {
   key: 'root',
   version: 1,
   storage,
+  blacklist: [apiSlice.reducerPath],
 };
 
 // Use combineReducers to combine reducers

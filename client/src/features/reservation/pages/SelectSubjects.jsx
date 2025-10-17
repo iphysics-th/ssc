@@ -12,7 +12,6 @@ const { Paragraph, Title } = Typography;
 
 dayjs.locale('th');
 
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
 const timeSlots = [
   'คาบเช้า (9:00 - 12:00)',
   'คาบบ่าย (13:00 - 16:00)',
@@ -344,7 +343,6 @@ const SubjectSelection = () => {
       <SubjectSelectionModal
         isModalVisible={isModalVisible}
         handleCancel={closeModal}
-        backendUrl={backendUrl}
         onSubjectSelected={handleSubjectSelected}
         numberOfStudents={formData.numberOfStudents || 1}
         initialSelection={

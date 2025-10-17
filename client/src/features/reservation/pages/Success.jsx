@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Tag } from 'antd'; // Import Ant Design Tag for colored status
 import '../../../css/Reservation/ReserveCheck.css';
+import { useLazySearchReservationQuery } from '../reservationApiSlice';
 
 const ReserveCheck = () => {
   const [reservationNumber, setReservationNumber] = useState('');
   const [reservationData, setReservationData] = useState(null);
   const [error, setError] = useState(null);
-  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+  const [searchReservation, { isFetching }] = useLazySearchReservationQuery();
 
   const handleInputChange = (e) => {
     setReservationNumber(e.target.value);
@@ -21,10 +21,8 @@ const ReserveCheck = () => {
     }
 
     try {
-      const response = await axios.get(`${backendUrl}/api/reservation/search`, {
-        params: { reservationNumber }
-      });
-      setReservationData(response.data);
+      const data = await searchReservation(reservationNumber).unwrap();
+      setReservationData(data);
       setError(null);
     } catch (err) {
       setError('ไม่พบหมายเลขการจอง');
@@ -102,7 +100,9 @@ const ReserveCheck = () => {
         onChange={handleInputChange}
         className="reservation-input"
       />
-      <button onClick={handleSearch} className="search-button">ค้นหา</button>
+      <button onClick={handleSearch} className="search-button" disabled={isFetching}>
+        {isFetching ? 'กำลังค้นหา...' : 'ค้นหา'}
+      </button>
       {error && <p className="error-message">{error}</p>}
       {reservationData && (
         <div className="reservation-data">

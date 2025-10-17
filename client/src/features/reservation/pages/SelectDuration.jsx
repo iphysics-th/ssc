@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { Card, Calendar, Alert, Select, Space, Row, Col, Button, InputNumber, Form, Modal } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useFormData } from '../../../contexts/FormDataContext';
-import axios from 'axios';
 import SubjectSelectionModal from '../components/SubjectModal';
 import Protected from '../../../hooks/userProtected';
 import '../../../css/Reservation/CourseSelection.css';
 import { message } from 'antd';
+import {
+  useGetConfirmedReservationsQuery,
+  useLazyCheckReservationNumberQuery,
+} from '../reservationApiSlice';
 
 dayjs.locale('th');
-
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
-
-
 
 const monthMapping = {
   'January': 'มกราคม',
@@ -44,35 +43,36 @@ const CourseSelection = () => {
   const [isStudentModalVisible, setIsStudentModalVisible] = useState(false); // State for modal visibility
   const navigate = useNavigate();
   const { formData, updateFormData } = useFormData(); // Use the context
-  const [confirmedReservations, setConfirmedReservations] = useState([]);
-  const [processedReservations, setProcessedReservations] = useState([]);
   const [currentSelection, setCurrentSelection] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [categories, setCategories] = useState([]);
   const [editingContext, setEditingContext] = useState({ date: null, slot: null });
+  const { data: availabilityData } = useGetConfirmedReservationsQuery();
+  const [triggerReservationCheck] = useLazyCheckReservationNumberQuery();
 
 
-  useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        const response = await axios.get(`${backendUrl}/api/reservation/confirmed`);
-        const confirmed = response.data.confirmed.map(reservation => ({
-          dates: reservation.selectedDates.map(date => dayjs(date).format('YYYY-MM-DD')),
-          school: reservation.school
-        }));
-        const processed = response.data.processed.map(reservation => ({
-          dates: reservation.selectedDates.map(date => dayjs(date).format('YYYY-MM-DD')),
-          school: reservation.school
-        }));
-        setConfirmedReservations(confirmed);
-        setProcessedReservations(processed);
-      } catch (error) {
-        console.error('Error fetching reservations:', error);
-      }
-    };
+  const confirmedReservations = useMemo(() => {
+    if (!availabilityData?.confirmed) {
+      return [];
+    }
+    return availabilityData.confirmed.map((reservation) => ({
+      dates: (reservation.selectedDates || []).map((date) =>
+        dayjs(date).format('YYYY-MM-DD')
+      ),
+      school: reservation.school,
+    }));
+  }, [availabilityData]);
 
-    fetchReservations();
-  }, []);
+  const processedReservations = useMemo(() => {
+    if (!availabilityData?.processed) {
+      return [];
+    }
+    return availabilityData.processed.map((reservation) => ({
+      dates: (reservation.selectedDates || []).map((date) =>
+        dayjs(date).format('YYYY-MM-DD')
+      ),
+      school: reservation.school,
+    }));
+  }, [availabilityData]);
 
   useEffect(() => {
     const newSlotSelections = { ...slotSelections };
@@ -92,8 +92,8 @@ const CourseSelection = () => {
 
   const checkReservationNumberUnique = async (reservationNumber) => {
     try {
-      const response = await axios.get(`${backendUrl}/api/reservation/check/${reservationNumber}`);
-      return !response.data.exists; // If it exists, we return false, meaning it's not unique
+      const response = await triggerReservationCheck(reservationNumber).unwrap();
+      return !response?.exists; // If it exists, we return false, meaning it's not unique
     } catch (error) {
       console.error('Error checking reservation number:', error);
       return false;
@@ -257,16 +257,6 @@ const CourseSelection = () => {
     setSlotSelections({ ...slotSelections });
     setIsModalVisible(false);
     setEditingContext({ date: null, slot: null });
-  };
-
-  const findSubjectLabelAndCategory = (subjectValue) => {
-    for (const category of categories) {
-      const foundSubject = category.subjects.find(subject => subject.value === subjectValue);
-      if (foundSubject) {
-        return `${foundSubject.label} (${category.label})`; // Return subject label and category
-      }
-    }
-    return null;
   };
 
   const renderTimeSlots = () => {
@@ -437,7 +427,6 @@ const CourseSelection = () => {
             <SubjectSelectionModal
               isModalVisible={isModalVisible}
               handleCancel={handleCancel}
-              backendUrl={backendUrl}
               onSubjectSelected={onSubjectSelected}
               numberOfStudents={numberOfStudents}
             />
