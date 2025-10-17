@@ -1,31 +1,56 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, Button, Select } from 'antd';
+import React, { useEffect, useState } from "react";
+import {
+  Modal,
+  Button,
+  Tabs,
+  Select,
+  Card,
+  Tag,
+  Spin,
+  Empty,
+  Typography,
+  Drawer,
+  Breadcrumb,
+} from "antd";
+import {
+  BookOutlined,
+  AppstoreOutlined,
+  FilterOutlined,
+  ArrowRightOutlined,
+} from "@ant-design/icons";
 import {
   useGetSubjectLevelsQuery,
-  useLazyGetSubjectsByCategoryQuery,
   useLazyGetSubjectsByLevelQuery,
+  useLazyGetSubjectsByCategoryQuery,
   useLazyGetSubjectsBySubcategoryQuery,
-} from '../reservationApiSlice';
+} from "../reservationApiSlice";
+import { useNavigate } from "react-router-dom";
+
+const { Option } = Select;
+const { Title, Text, Paragraph } = Typography;
 
 const SubjectSelectionModal = ({
   isModalVisible,
   handleCancel,
   onSubjectSelected,
   numberOfStudents,
-  initialSelection = null,
 }) => {
   const [levels, setLevels] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
-  const [subjects, setSubjects] = useState([]);
   const [selectedLevel, setSelectedLevel] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [structuredSubjects, setStructuredSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
+  const [selectedSubjectDetail, setSelectedSubjectDetail] = useState(null); // 👈 New
+  const [drawerVisible, setDrawerVisible] = useState(false); // 👈 New
+
+  const navigate = useNavigate();
 
   const { data: levelOptions = [] } = useGetSubjectLevelsQuery(undefined, {
     skip: !isModalVisible,
   });
+
   const [fetchCategories] = useLazyGetSubjectsByLevelQuery();
   const [fetchSubcategories] = useLazyGetSubjectsByCategoryQuery();
   const [fetchSubjects] = useLazyGetSubjectsBySubcategoryQuery();
@@ -34,273 +59,444 @@ const SubjectSelectionModal = ({
     if (isModalVisible) {
       setLevels(Array.isArray(levelOptions) ? levelOptions : []);
     } else {
-      setLevels([]);
-      setCategories([]);
-      setSubcategories([]);
-      setSubjects([]);
-      setSelectedLevel(null);
-      setSelectedCategory(null);
-      setSelectedSubcategory(null);
-      setSelectedSubject(null);
+      resetAll();
     }
   }, [isModalVisible, levelOptions]);
 
-  useEffect(() => {
-    if (!isModalVisible) {
-      return;
-    }
-
-    let isActive = true;
-
-    const bootstrapSelection = async () => {
-      if (!initialSelection) {
-        return;
-      }
-
-      const { level, category, subcategory, subject } = initialSelection;
-
-      if (!level) {
-        return;
-      }
-
-      try {
-        setSelectedLevel(level);
-        const levelCategories = await fetchCategories(level).unwrap();
-        if (!isActive) return;
-        setCategories(levelCategories ?? []);
-
-        if (!category) {
-          return;
-        }
-
-        setSelectedCategory(category);
-        const categorySubcategories = await fetchSubcategories({
-          level,
-          category,
-        }).unwrap();
-        if (!isActive) return;
-        setSubcategories(categorySubcategories ?? []);
-
-        if (!subcategory) {
-          return;
-        }
-
-        setSelectedSubcategory(subcategory);
-        const subcategorySubjects = await fetchSubjects({
-          level,
-          category,
-          subcategory,
-        }).unwrap();
-        if (!isActive) return;
-        setSubjects(subcategorySubjects ?? []);
-        if (subject?.code) {
-          setSelectedSubject(subject.code);
-        }
-      } catch (error) {
-        console.error('Failed to prefill subject selection', error);
-      }
-    };
-
-    bootstrapSelection();
-
-    return () => {
-      isActive = false;
-    };
-  }, [
-    isModalVisible,
-    initialSelection,
-    fetchCategories,
-    fetchSubcategories,
-    fetchSubjects,
-  ]);
-
-  const handleLevelChange = async (value) => {
-    setSelectedLevel(value);
+  const resetAll = () => {
+    setStructuredSubjects([]);
     setSelectedCategory(null);
     setSelectedSubcategory(null);
     setSelectedSubject(null);
-    setCategories([]);
-    setSubcategories([]);
-    setSubjects([]);
+    setDrawerVisible(false);
+  };
 
-    if (!value) {
-      return;
-    }
+  const handleLevelChange = async (levelKey) => {
+    setSelectedLevel(levelKey);
+    resetAll();
 
     try {
-      const levelCategories = await fetchCategories(value).unwrap();
-      setCategories(levelCategories ?? []);
+      setLoading(true);
+      const categories = await fetchCategories(levelKey).unwrap();
+      const structured = [];
+
+      for (const cat of categories ?? []) {
+        const subcats = await fetchSubcategories({
+          level: levelKey,
+          category: cat.category_en,
+        }).unwrap();
+
+        const subcatBlocks = [];
+        for (const sub of subcats ?? []) {
+          const subjList = await fetchSubjects({
+            level: levelKey,
+            category: cat.category_en,
+            subcategory: sub.subcategory_en,
+          }).unwrap();
+
+          subcatBlocks.push({
+            ...sub,
+            subjects: subjList ?? [],
+          });
+        }
+
+        structured.push({
+          ...cat,
+          subcategories: subcatBlocks,
+        });
+      }
+
+      setStructuredSubjects(structured);
     } catch (error) {
-      console.error(`Error fetching categories for level ${value}:`, error);
+      console.error("Error building subject hierarchy:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleCategoryChange = async (value) => {
-    setSelectedCategory(value);
-    setSelectedSubcategory(null);
-    setSelectedSubject(null);
-    setSubcategories([]);
-    setSubjects([]);
+  const filteredStructure = structuredSubjects
+    .filter((cat) => !selectedCategory || cat.category_en === selectedCategory)
+    .map((cat) => ({
+      ...cat,
+      subcategories: cat.subcategories.filter(
+        (sub) =>
+          !selectedSubcategory || sub.subcategory_en === selectedSubcategory
+      ),
+    }));
 
-    if (!value || !selectedLevel) {
-      return;
+  const findSubjectByCode = (code) => {
+    for (const cat of structuredSubjects) {
+      for (const sub of cat.subcategories) {
+        const subject = sub.subjects.find((s) => s.code === code);
+        if (subject)
+          return {
+            subject,
+            category: cat,
+            subcategory: sub,
+          };
+      }
     }
-
-    try {
-      const categorySubcategories = await fetchSubcategories({
-        level: selectedLevel,
-        category: value,
-      }).unwrap();
-      setSubcategories(categorySubcategories ?? []);
-    } catch (error) {
-      console.error(`Error fetching subcategories for category ${value}:`, error);
-    }
+    return null;
   };
 
-  const handleSubcategoryChange = async (value) => {
-    setSelectedSubcategory(value);
-    setSelectedSubject(null);
-    setSubjects([]);
-
-    if (!value || !selectedLevel || !selectedCategory) {
-      return;
-    }
-
-    try {
-      const subcategorySubjects = await fetchSubjects({
-        level: selectedLevel,
-        category: selectedCategory,
-        subcategory: value,
-      }).unwrap();
-      setSubjects(subcategorySubjects ?? []);
-    } catch (error) {
-      console.error(`Error fetching subjects for subcategory ${value}:`, error);
-    }
+  const handleSubjectClick = (subject) => {
+    setSelectedSubject(subject.code);
+    setSelectedSubjectDetail(subject);
+    setDrawerVisible(true);
   };
 
   const handleOk = () => {
-    const selected = subjects.find((sub) => sub.code === selectedSubject);
+    const selected = findSubjectByCode(selectedSubject);
     if (selected) {
-      const levelMeta = levels.find((level) => level.level_en === selectedLevel);
-      const categoryMeta = categories.find(
-        (category) => category.category_en === selectedCategory
-      );
-      const subcategoryMeta = subcategories.find(
-        (subcategory) => subcategory.subcategory_en === selectedSubcategory
-      );
-
       onSubjectSelected({
-        subject: selected,
+        subject: selected.subject,
         level: selectedLevel,
-        levelLabel: levelMeta ? levelMeta.level_th : null,
-        category: selectedCategory,
-        categoryLabel: categoryMeta ? categoryMeta.category_th : null,
-        subcategory: selectedSubcategory,
-        subcategoryLabel: subcategoryMeta ? subcategoryMeta.subcategory_th : null,
+        category: selected.category.category_en,
+        subcategory: selected.subcategory.subcategory_en,
       });
     }
     handleCancel();
   };
 
-  const isOkButtonDisabled =
-    !selectedLevel || !selectedCategory || !selectedSubcategory || !selectedSubject;
-
   return (
-    <Modal
-      title="Select Subject"
-      open={isModalVisible}
-      onCancel={handleCancel}
-      onOk={handleOk}
-      footer={[
-        <Button key="back" onClick={handleCancel}>
-          ยกเลิก
-        </Button>,
-        <Button key="submit" type="primary" onClick={handleOk} disabled={isOkButtonDisabled}>
-          ตกลง
-        </Button>,
-      ]}
-      maskClosable={false}
-    >
-      <h4>เลือกระดับ</h4>
-      <Select
-        placeholder="Select Level"
-        value={selectedLevel}
-        onChange={handleLevelChange}
-        style={{ width: '100%', marginBottom: '10px' }}
-        allowClear
+    <>
+      <Modal
+        open={isModalVisible}
+        onCancel={handleCancel}
+        width={900}
+        maskClosable={false}
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <BookOutlined />
+            <span>เลือกวิชา</span>
+          </div>
+        }
+        footer={[
+          <Button key="cancel" onClick={handleCancel}>
+            ยกเลิก
+          </Button>,
+          <Button
+            key="ok"
+            type="primary"
+            onClick={handleOk}
+            disabled={!selectedSubject}
+          >
+            ตกลง
+          </Button>,
+        ]}
       >
-        {levels.map((level) => (
-          <Select.Option key={level.level_en} value={level.level_en}>
-            {level.level_th}
-          </Select.Option>
-        ))}
-      </Select>
-      <h4>เลือกกลุ่มวิชา</h4>
-      {selectedLevel && (
-        <Select
-          placeholder="Select Category"
-          value={selectedCategory}
-          onChange={handleCategoryChange}
-          style={{ width: '100%', marginBottom: '10px' }}
-          allowClear
-        >
-          {categories.map((category) => (
-            <Select.Option key={category.category_en} value={category.category_en}>
-              {category.category_th}
-            </Select.Option>
-          ))}
-        </Select>
-      )}
-      <h4>เลือกสาขาย่อย</h4>
-      {selectedCategory && (
-        <Select
-          placeholder="Select Subcategory"
-          value={selectedSubcategory}
-          onChange={handleSubcategoryChange}
-          style={{ width: '100%', marginBottom: '10px' }}
-          allowClear
-        >
-          {subcategories.map((subcategory) => (
-            <Select.Option key={subcategory.subcategory_en} value={subcategory.subcategory_en}>
-              {subcategory.subcategory_th}
-            </Select.Option>
-          ))}
-        </Select>
-      )}
-      <h4>เลือกคอร์ส</h4>
-      {selectedSubcategory && (
-        <Select
-          placeholder="Select Subject"
-          value={selectedSubject}
-          onChange={setSelectedSubject}
-          style={{ width: '100%', marginBottom: '10px' }}
-          allowClear
-        >
-          {subjects.map((subject) => {
-            const isTooManyStudents = subject.student_max < numberOfStudents;
-            const subjectCode = subject.code?.toLowerCase() || '';
-            const isMathSubject = subjectCode.includes('math');
-            const isBioSubject = subjectCode.includes('bio1');
+        <Tabs
+          activeKey={selectedLevel}
+          onChange={handleLevelChange}
+          centered
+          items={levels.map((lvl) => ({
+            key: lvl.level_en,
+            label: lvl.level_th,
+          }))}
+          style={{ marginBottom: 16 }}
+        />
 
-            const isDisabled = isTooManyStudents || isMathSubject || isBioSubject;
+        {/* Filters */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 20,
+          }}
+        >
+          <FilterOutlined style={{ color: "#64748b" }} />
 
-            return (
-              <Select.Option
-                key={subject.code}
-                value={subject.code}
-                disabled={isDisabled}
-                style={isDisabled ? { color: 'grey' } : {}}
+          <Select
+            placeholder="เลือกกลุ่มวิชา (ถ้าต้องการ)"
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+            style={{ minWidth: 200 }}
+            allowClear
+            disabled={!structuredSubjects.length}
+          >
+            {structuredSubjects.map((cat) => (
+              <Option key={cat.category_en} value={cat.category_en}>
+                {cat.category_th}
+              </Option>
+            ))}
+          </Select>
+
+          <Select
+            placeholder="เลือกสาขาย่อย (ถ้าต้องการ)"
+            value={selectedSubcategory}
+            onChange={setSelectedSubcategory}
+            style={{ minWidth: 200 }}
+            allowClear
+            disabled={!selectedCategory}
+          >
+            {structuredSubjects
+              .find((cat) => cat.category_en === selectedCategory)
+              ?.subcategories.map((sub) => (
+                <Option key={sub.subcategory_en} value={sub.subcategory_en}>
+                  {sub.subcategory_th}
+                </Option>
+              ))}
+          </Select>
+        </div>
+
+        {/* Subject Browser */}
+        <Spin spinning={loading}>
+          {filteredStructure.length ? (
+            <div
+              style={{
+                maxHeight: "65vh",
+                overflowY: "auto",
+                paddingRight: 10,
+              }}
+            >
+              {filteredStructure.map((cat) => (
+                <div key={cat.category_en} style={{ marginBottom: 32 }}>
+                  <div
+                    style={{
+                      background:
+                        "linear-gradient(90deg, #f1f5f9 0%, #ffffff 100%)",
+                      borderLeft: "6px solid #1677ff",
+                      borderRadius: "8px",
+                      padding: "10px 14px",
+                      marginBottom: 16,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                    }}
+                  >
+                    <Title
+                      level={4}
+                      style={{
+                        margin: 0,
+                        color: "#0f172a",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {cat.category_th}
+                    </Title>
+                  </div>
+
+                  {cat.subcategories.map((sub) => (
+                    <div key={sub.subcategory_en} style={{ marginBottom: 24 }}>
+                      <Text
+                        strong
+                        style={{
+                          display: "block",
+                          color: "#334155",
+                          marginBottom: 10,
+                        }}
+                      >
+                        {sub.subcategory_th}
+                      </Text>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 12,
+                          overflowX: "auto",
+                          paddingBottom: 8,
+                        }}
+                      >
+                        {sub.subjects.map((subject) => {
+                          const disabled =
+                            subject.student_max < numberOfStudents;
+                          const isSelected =
+                            selectedSubject === subject.code;
+
+                          return (
+                            <Card
+                              key={subject.code}
+                              hoverable={!disabled}
+                              onClick={() =>
+                                !disabled && handleSubjectClick(subject)
+                              }
+                              style={{
+                                width: 180,
+                                minWidth: 180,
+                                flex: "0 0 auto",
+                                borderRadius: 12,
+                                border: isSelected
+                                  ? "2px solid #1677ff"
+                                  : "1px solid #e5e7eb",
+                                opacity: disabled ? 0.6 : 1,
+                                cursor: disabled
+                                  ? "not-allowed"
+                                  : "pointer",
+                                transition: "all 0.2s ease",
+                              }}
+                              cover={
+                                <div
+                                  style={{
+                                    width: "100%",
+                                    aspectRatio: "4 / 3",
+                                    background: "#f8fafc",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: 36,
+                                    color: "#94a3b8",
+                                    borderBottom: "1px solid #e2e8f0",
+                                  }}
+                                >
+                                  <AppstoreOutlined />
+                                </div>
+                              }
+                            >
+                              <Card.Meta
+                                title={
+                                  <div
+                                    style={{
+                                      fontWeight: 600,
+                                      fontSize: "0.95rem",
+                                      color: "#1e293b",
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    {subject.name_th}
+                                  </div>
+                                }
+                                description={
+                                  <div
+                                    style={{
+                                      textAlign: "center",
+                                      marginTop: 6,
+                                    }}
+                                  >
+                                    <Tag color="blue">
+                                      ฿{subject.price || 0}
+                                    </Tag>
+                                    <Tag color="green">
+                                      {subject.student_max} คน
+                                    </Tag>
+                                  </div>
+                                }
+                              />
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="ยังไม่มีข้อมูลวิชาในระดับนี้"
+            />
+          )}
+        </Spin>
+      </Modal>
+
+      {/* Slide-in Drawer (Course Detail) */}
+      <Drawer
+        title={selectedSubjectDetail?.name_th || "รายละเอียดคอร์ส"}
+        placement="right"
+        width={400}
+        onClose={() => setDrawerVisible(false)}
+        open={drawerVisible}
+      >
+        {selectedSubjectDetail ? (
+          <div>
+            {/* Thumbnail */}
+            <div
+              style={{
+                width: "100%",
+                aspectRatio: "1 / 1",
+                background: "#f8fafc",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 16,
+              }}
+            >
+              {selectedSubjectDetail.thumbnail ? (
+                <img
+                  src={`${process.env.REACT_APP_BACKEND_URL}/${selectedSubjectDetail.thumbnail}`}
+                  alt={selectedSubjectDetail.name_th}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: 8,
+                  }}
+                />
+              ) : (
+                <AppstoreOutlined style={{ fontSize: 48, color: "#94a3b8" }} />
+              )}
+            </div>
+
+            {/* Breadcrumb */}
+            <Breadcrumb
+              style={{ marginBottom: 8 }}
+              items={[
+                {
+                  title:
+                    findSubjectByCode(selectedSubject)?.category?.category_th ||
+                    "",
+                },
+                {
+                  title:
+                    findSubjectByCode(selectedSubject)?.subcategory
+                      ?.subcategory_th || "",
+                },
+              ]}
+            />
+
+            {/* Price and Limit */}
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginBottom: 12,
+              }}
+            >
+              <Tag color="blue">฿{selectedSubjectDetail.price || 0}</Tag>
+              <Tag color="green">
+                จำนวนนักเรียนสูงสุด {selectedSubjectDetail.student_max} คน
+              </Tag>
+            </div>
+
+            {/* Summary */}
+            <Paragraph
+              style={{
+                color: "#334155",
+                maxHeight: 240,
+                overflowY: "auto",
+                marginBottom: 20,
+              }}
+            >
+              {selectedSubjectDetail.description ||
+                "ไม่มีรายละเอียดคอร์สเพิ่มเติม"}
+            </Paragraph>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <Button
+                type="primary"
+                icon={<ArrowRightOutlined />}
+                onClick={() =>
+                  navigate(`/courses/${selectedSubjectDetail.code}`)
+                }
               >
-                {subject.name_th}
-                {isTooManyStudents ? ' (จำนวนนักเรียนเกิน)' : ''}
-              </Select.Option>
-            );
-          })}
-        </Select>
-      )}
-    </Modal>
+                ดูรายละเอียดเพิ่มเติม
+              </Button>
+              <Button
+                onClick={() => {
+                  setDrawerVisible(false);
+                  handleOk();
+                }}
+              >
+                เลือกคอร์สนี้
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Empty description="ไม่มีข้อมูลคอร์ส" />
+        )}
+      </Drawer>
+    </>
   );
 };
 
 export default SubjectSelectionModal;
-
