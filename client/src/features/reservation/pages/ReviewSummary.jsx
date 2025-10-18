@@ -63,7 +63,7 @@ const translateStatus = (status) =>
 
 // ----------- Component -----------
 const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
-  const { formData } = useFormData();
+  const { formData, updateFormData } = useFormData();
   const authUser = useSelector((state) => state.auth.user);
   const [createReservation, { isLoading: isSaving }] =
     useCreateReservationMutation();
@@ -89,19 +89,40 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
     studentLevel,
   } = formData;
 
-  // --- Simplified price function (for layout clarity) ---
-  const calculatePrice = (days, students) => {
-    if (!days || !students) return 0;
-    if (days <= 1) return students * 500;
-    if (days <= 2) return students * 450;
-    return students * 400;
-  };
-  const price = calculatePrice(numberOfDays, numberOfStudents);
+  const subjectEntries = classSubjects.flatMap((cls, classIndex) => {
+    const slots = Array.isArray(cls?.slots) ? cls.slots : [];
+    return slots
+      .filter((slot) => slot?.subject || slot?.name_th)
+      .map((slot, slotIndex) => {
+        const rawPrice =
+          slot?.price ??
+          (typeof slot?.subject?.price === "number" ? slot.subject.price : null);
+        const numericPrice = Number(rawPrice);
+        const priceValue = Number.isFinite(numericPrice) ? numericPrice : 0;
+
+        return {
+          key: `${classIndex}-${slot.slotIndex ?? slotIndex}`,
+          classNumber: cls?.classNumber ?? classIndex + 1,
+          date: slot?.date || null,
+          slot: slot?.slot || "-",
+          subjectName: slot?.subject?.name_th || slot?.name_th || "-",
+          code: slot?.subject?.code || slot?.code || "-",
+          price: priceValue,
+        };
+      });
+  });
+
+  const totalPrice = subjectEntries.reduce((acc, entry) => acc + (entry.price || 0), 0);
+  const price = totalPrice;
+  const totalSubjectsSelected = subjectEntries.length;
+  const formattedTotalPrice = price.toLocaleString("th-TH");
+  const currencyFormatter = (value) => Number(value || 0).toLocaleString("th-TH");
 
   // --- Handle save ---
   const saveData = async () => {
     try {
-      await createReservation({ ...formData, userId }).unwrap();
+      updateFormData({ price });
+      await createReservation({ ...formData, userId, price }).unwrap();
       message.success("การจองสำเร็จ!");
       if (onNext) onNext();
     } catch (error) {
@@ -153,18 +174,17 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
         </>
       ),
     },
+    {
+      title: "ราคา (บาท)",
+      dataIndex: "price",
+      key: "price",
+      align: "right",
+      width: "15%",
+      render: (value) => <Text>{currencyFormatter(value)}</Text>,
+    },
   ];
 
-  const subjectData = classSubjects.flatMap((cls) =>
-    (cls.slots || []).map((slot, index) => ({
-      key: `${cls.classNumber}-${index}`,
-      classNumber: cls.classNumber,
-      date: slot.date,
-      slot: slot.slot,
-      subjectName: slot.subject?.name_th || slot.name_th || "-",
-      code: slot.subject?.code || slot.code,
-    }))
-  );
+  const subjectData = subjectEntries;
 
   return (
     <div
@@ -280,6 +300,24 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
             pagination={false}
             size="middle"
             bordered
+            summary={() =>
+              totalSubjectsSelected > 0 ? (
+                <Table.Summary>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell
+                      index={0}
+                      colSpan={4}
+                      style={{ textAlign: "right" }}
+                    >
+                      <Text strong>รวม {totalSubjectsSelected} วิชา</Text>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={4} style={{ textAlign: "right" }}>
+                      <Text strong>{formattedTotalPrice} บาท</Text>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                </Table.Summary>
+              ) : null
+            }
           />
         ) : (
           <Alert
@@ -288,6 +326,12 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
             showIcon
             style={{ background: "#f8fafc" }}
           />
+        )}
+        {totalSubjectsSelected > 0 && (
+          <Text type="secondary" style={{ display: "block", marginTop: 12 }}>
+            คำนวณจาก {totalSubjectsSelected.toLocaleString("th-TH")}{" "}
+            วิชา × ราคาต่อวิชาตามตารางด้านบน = {formattedTotalPrice} บาท
+          </Text>
         )}
       </Card>
 
@@ -326,7 +370,7 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
       {/* PRICE */}
       <div style={{ textAlign: "center", marginBottom: 32 }}>
         <Title level={4} style={{ color: "#1677ff", marginBottom: 4 }}>
-          <DollarOutlined /> ค่าบริการรวม: {price} บาท
+          <DollarOutlined /> ค่าบริการรวม: {formattedTotalPrice} บาท
         </Title>
         <a
           href="/utility/calculation.jpg"

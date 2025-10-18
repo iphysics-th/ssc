@@ -94,6 +94,12 @@ const ReserveCheck = forwardRef(({ onPrev }, ref) => {
     return `${day} ${month} ${year}`;
   };
 
+  const formatCurrency = (value) => {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '-';
+    return num.toLocaleString('th-TH');
+  };
+
   return (
     <div className="reservation-lookup-container">
       <h1>ตรวจสอบการจอง</h1>
@@ -125,7 +131,9 @@ const ReserveCheck = forwardRef(({ onPrev }, ref) => {
             <p><strong>ระดับชั้น:</strong> {reservationData.studentRange === 'มัธยม' ? 'ม.' : 'ป.'}{reservationData.studentLevel}</p>
           )}
           {reservationData.numberOfDays && <p><strong>จำนวนวัน:</strong> {reservationData.numberOfDays} วัน</p>}
-          {reservationData.price && <p><strong>ค่าบริการ:</strong> {reservationData.price} บาท</p>}
+          {reservationData.price != null && (
+            <p><strong>ค่าบริการ:</strong> {formatCurrency(reservationData.price)} บาท</p>
+          )}
           {reservationData.selectedDates && <p><strong>วันที่อบรม:</strong> {reservationData.selectedDates.map(date => formatThaiDate(date)).join(', ')}</p>}
           <br />
           {reservationData.classSubjects && reservationData.classSubjects.length > 0 ? (
@@ -139,6 +147,7 @@ const ReserveCheck = forwardRef(({ onPrev }, ref) => {
                     <th>ช่วงเวลา</th>
                     <th>วิชา</th>
                     <th>รหัสวิชา</th>
+                    <th>ราคา (บาท)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -151,10 +160,23 @@ const ReserveCheck = forwardRef(({ onPrev }, ref) => {
                         <td>{slot.slot || '-'}</td>
                         <td>{slot.subject?.name_th || slot.name_th || '-'}</td>
                         <td>{slot.subject?.code || slot.code || '-'}</td>
+                        <td>{formatCurrency(slot.price ?? slot.subject?.price)}</td>
                       </tr>
                     ));
                   })}
                 </tbody>
+                {reservationData.price != null && (
+                  <tfoot>
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                        รวม
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                        {formatCurrency(reservationData.price)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </>
           ) : reservationData.slotSelections && reservationData.slotSelections.length > 0 ? (
@@ -167,6 +189,7 @@ const ReserveCheck = forwardRef(({ onPrev }, ref) => {
                     <th>เวลาเรียน</th>
                     <th>วิชา</th>
                     <th>รหัสวิชา</th>
+                    <th>ราคา (บาท)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -176,9 +199,22 @@ const ReserveCheck = forwardRef(({ onPrev }, ref) => {
                       <td>{slot.time}</td>
                       <td>{slot.name_th}</td>
                       <td>{slot.code}</td>
+                      <td>{formatCurrency(slot.price ?? slot.subject?.price)}</td>
                     </tr>
                   ))}
                 </tbody>
+                {reservationData.price != null && (
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                        รวม
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                        {formatCurrency(reservationData.price)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </>
           ) : null}

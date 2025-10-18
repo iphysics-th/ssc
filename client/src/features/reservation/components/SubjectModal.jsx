@@ -12,6 +12,7 @@ import {
   Drawer,
   Breadcrumb,
   Space,
+  Alert,
   message,
 } from "antd";
 import {
@@ -70,6 +71,7 @@ const SubjectSelectionModal = ({
     setSelectedCategory(null);
     setSelectedSubcategory(null);
     setSelectedSubject(null);
+    setSelectedSubjectDetail(null);
     setDrawerVisible(false);
   };
 
@@ -240,20 +242,21 @@ const SubjectSelectionModal = ({
     setSelectedSubject(subject.code);
     setSelectedSubjectDetail({
       ...subject,
+      price: Number.isFinite(Number(subject.price)) ? Number(subject.price) : 0,
       categoryInfo: category
         ? {
-          category_en: category.category_en,
-          category_th: category.category_th,
-          isActive: category.isActive !== false,
-        }
+            category_en: category.category_en,
+            category_th: category.category_th,
+            isActive: category.isActive !== false,
+          }
         : null,
       subcategoryInfo: subcategory
         ? {
-          subcategory_en: subcategory.subcategory_en,
-          subcategory_th: subcategory.subcategory_th,
-          isActive: subcategory.isActive !== false,
-          isCategoryActive: subcategory.isCategoryActive !== false,
-        }
+            subcategory_en: subcategory.subcategory_en,
+            subcategory_th: subcategory.subcategory_th,
+            isActive: subcategory.isActive !== false,
+            isCategoryActive: subcategory.isCategoryActive !== false,
+          }
         : null,
       isAvailable: subjectOpen && !capacityExceeded,
       availability: {
@@ -618,11 +621,23 @@ const SubjectSelectionModal = ({
                 marginBottom: 12,
               }}
             >
-              <Tag color="blue">฿{selectedSubjectDetail.price || 0}</Tag>
+              <Tag color="blue">
+                ฿{Number(selectedSubjectDetail.price || 0).toLocaleString("th-TH")}
+              </Tag>
               <Tag color="green">
                 จำนวนนักเรียนสูงสุด {selectedSubjectDetail.student_max} คน
               </Tag>
             </div>
+
+            {!selectedSubjectDetail.isAvailable && availabilityNotice.length > 0 && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 16 }}
+                message="คอร์สนี้ไม่พร้อมสำหรับการจอง"
+                description={availabilityNotice.join(" • ")}
+              />
+            )}
 
             {/* Summary */}
             <Paragraph
@@ -648,7 +663,7 @@ const SubjectSelectionModal = ({
                 ดูรายละเอียดเพิ่มเติม
               </Button>
               <Button
-                disabled={!selectedSubjectDetail.isAvailable}
+                disabled={!selectedSubjectDetail?.isAvailable}
                 onClick={() => {
                   const success = handleOk();
                   if (success) {

@@ -75,6 +75,12 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
           : existingSlot?.name_th
             ? { code: existingSlot.code, name_th: existingSlot.name_th }
             : null;
+        const priceSource =
+          existingSlot?.price ??
+          existingSlot?.subject?.price ??
+          subjectData?.price ??
+          null;
+        const priceValue = Number(priceSource);
         return {
           slotIndex: definition.slotIndex,
           date: definition.dateValue,
@@ -88,6 +94,7 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
           categoryLabel: existingSlot?.categoryLabel || null,
           subcategory: existingSlot?.subcategory || null,
           subcategoryLabel: existingSlot?.subcategoryLabel || null,
+          price: Number.isFinite(priceValue) ? priceValue : null,
         };
       });
       return { classNumber: savedEntry?.classNumber || index + 1, slots };
@@ -152,6 +159,8 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
       const definition = slotDefinitions[activeSlotIndex];
       const existingSlot = slots[activeSlotIndex] || { slotIndex: activeSlotIndex };
 
+      const priceValue = Number(selection.subject?.price);
+
       slots[activeSlotIndex] = {
         ...existingSlot,
         slotIndex: activeSlotIndex,
@@ -166,6 +175,7 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
         categoryLabel: selection.categoryLabel || null,
         subcategory: selection.subcategory || null,
         subcategoryLabel: selection.subcategoryLabel || null,
+        price: Number.isFinite(priceValue) ? priceValue : null,
       };
 
       next[activeClassIndex] = {

@@ -14,6 +14,10 @@ const buildCaseInsensitiveCondition = (field, value) => ({
 
 const buildEmailRegexCondition = (field, email) => buildCaseInsensitiveCondition(field, email);
 const buildUsernameRegexCondition = (field, username) => buildCaseInsensitiveCondition(field, username);
+const coercePrice = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
 
 exports.createReservation = async (req, res) => {
   try {
@@ -59,9 +63,21 @@ const ensureClassSubjectsShape = async (reservationDoc) => {
           if (subjectDetails) {
             slot.code = subjectDetails.code || slot.code;
             slot.name_th = subjectDetails.name_th || slot.name_th;
+            if (slot.price == null) {
+              const normalized = coercePrice(subjectDetails.price);
+              if (normalized != null) {
+                slot.price = normalized;
+              }
+            }
           }
         } catch (err) {
           console.error('Error fetching subject details:', err);
+        }
+      }
+      if (slot.price == null) {
+        const normalized = coercePrice(slot.subject?.price);
+        if (normalized != null) {
+          slot.price = normalized;
         }
       }
     }
@@ -83,12 +99,19 @@ const ensureClassSubjectsShape = async (reservationDoc) => {
         categoryLabel: slot.categoryLabel || null,
         subcategory: slot.subcategory || null,
         subcategoryLabel: slot.subcategoryLabel || null,
+        price: coercePrice(slot.price ?? slot.subject?.price),
       }],
     }));
   } else {
     reservation.classSubjects = reservation.classSubjects.map((classItem, index) => {
       if (Array.isArray(classItem?.slots) && classItem.slots.length > 0) {
-        return classItem;
+        return {
+          ...classItem,
+          slots: classItem.slots.map((slot) => ({
+            ...slot,
+            price: coercePrice(slot.price ?? slot.subject?.price),
+          })),
+        };
       }
 
       const fallbackSlot = {
@@ -104,6 +127,7 @@ const ensureClassSubjectsShape = async (reservationDoc) => {
         categoryLabel: classItem.categoryLabel || null,
         subcategory: classItem.subcategory || null,
         subcategoryLabel: classItem.subcategoryLabel || null,
+        price: coercePrice(classItem.price ?? classItem.subject?.price),
       };
 
       return {

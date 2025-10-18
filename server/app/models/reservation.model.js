@@ -17,7 +17,8 @@ const slotSchema = new mongoose.Schema({
   category: String,
   categoryLabel: String,
   subcategory: String,
-  subcategoryLabel: String
+  subcategoryLabel: String,
+  price: Number,
 }, { _id: false });
 
 const classSlotSchema = new mongoose.Schema({
@@ -32,7 +33,8 @@ const classSlotSchema = new mongoose.Schema({
   category: String,
   categoryLabel: String,
   subcategory: String,
-  subcategoryLabel: String
+  subcategoryLabel: String,
+  price: Number,
 }, { _id: false });
 
 module.exports = mongoose => {
