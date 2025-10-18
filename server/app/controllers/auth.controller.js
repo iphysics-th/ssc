@@ -3,60 +3,69 @@ const db = require("../models");
 require("dotenv").config();
 const User = db.user;
 const Role = db.role;
-const { OAuth2Client } = require('google-auth-library');
+const { OAuth2Client } = require("google-auth-library");
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
 
+// ======================================================
+// 🔹 Helper: Unified Cookie Setter
+// ======================================================
+function setAuthCookies(res, accessToken, refreshToken) {
+  const isProd = process.env.NODE_ENV === "production";
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "None" : "Lax",
+  };
 
+  // Explicit expiry times (default fallback)
+  const accessTokenExpire =
+    (Number(process.env.ACCESS_TOKEN_EXPIRE) || 300) * 1000; // 5 min
+  const refreshTokenExpire =
+    (Number(process.env.REFRESH_TOKEN_EXPIRE) || 604800) * 1000; // 7 days
+
+  res.cookie("accessToken", accessToken, {
+    ...cookieOptions,
+    maxAge: accessTokenExpire,
+  });
+
+  res.cookie("refreshToken", refreshToken, {
+    ...cookieOptions,
+    maxAge: refreshTokenExpire,
+  });
+}
+
+// ======================================================
+// 🔹 Sign Up
+// ======================================================
 exports.signup = (req, res) => {
   const user = new User({
     username: req.body.username,
     email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 8)
+    password: bcrypt.hashSync(req.body.password, 8),
   });
 
   user.save((err, user) => {
     if (err) {
-      res.status(500).send({ message: err });
-      return;
+      return res.status(500).send({ message: err });
     }
 
     if (req.body.roles) {
-      Role.find(
-        {
-          name: { $in: req.body.roles }
-        },
-        (err, roles) => {
-          if (err) {
-            res.status(500).send({ message: err });
-            return;
-          }
+      Role.find({ name: { $in: req.body.roles } }, (err, roles) => {
+        if (err) return res.status(500).send({ message: err });
 
-          user.roles = roles.map(role => role._id);
-          user.save(err => {
-            if (err) {
-              res.status(500).send({ message: err });
-              return;
-            }
-
-            res.send({ message: "User was registered successfully!" });
-          });
-        }
-      );
+        user.roles = roles.map((role) => role._id);
+        user.save((err) => {
+          if (err) return res.status(500).send({ message: err });
+          res.send({ message: "User was registered successfully!" });
+        });
+      });
     } else {
       Role.findOne({ name: "user" }, (err, role) => {
-        if (err) {
-          res.status(500).send({ message: err });
-          return;
-        }
-
+        if (err) return res.status(500).send({ message: err });
         user.roles = [role._id];
-        user.save(err => {
-          if (err) {
-            res.status(500).send({ message: err });
-            return;
-          }
-
+        user.save((err) => {
+          if (err) return res.status(500).send({ message: err });
           res.send({ message: "User was registered successfully!" });
         });
       });
@@ -64,50 +73,35 @@ exports.signup = (req, res) => {
   });
 };
 
+// ======================================================
+// 🔹 Sign In
+// ======================================================
 exports.signin = (req, res) => {
   User.findOne({ email: req.body.email })
     .populate("roles", "-__v")
     .exec((err, user) => {
-      if (err) {
-        res.status(500).send({ message: err });
-        return;
-      }
+      if (err) return res.status(500).send({ message: err });
+      if (!user) return res.status(404).send({ message: "User Not found." });
 
-      if (!user) {
-        return res.status(404).send({ message: "User Not found." });
-      }
+      const passwordIsValid = bcrypt.compareSync(
+        req.body.password,
+        user.password
+      );
+      if (!passwordIsValid)
+        return res
+          .status(401)
+          .send({ accessToken: null, message: "Invalid Password!" });
 
-      var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
+      const token = user.signAccessToken();
+      const refreshToken = user.signRefreshToken();
 
-      if (!passwordIsValid) {
-        return res.status(401).send({ accessToken: null, message: "Invalid Password!" });
-      }
+      setAuthCookies(res, token, refreshToken);
 
-      const token = user.signAccessToken(); // Ensure this method exists in your User model
-      const refreshToken = user.signRefreshToken(); // Ensure this method exists in your User model
+      const authorities = user.roles.map((r) => r.name);
 
-      // Convert environment variable values to numbers for cookie maxAge
-      const accessTokenExpire = (Number(process.env.ACCESS_TOKEN_EXPIRE) || 300) * 1000; // default 5min
-      const refreshTokenExpire = (Number(process.env.REFRESH_TOKEN_EXPIRE) || 604800) * 1000; // default 7 days
-
-      const isProd = process.env.NODE_ENV === "production";
-      const cookieOptions = {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: isProd ? "None" : "Lax",
-      };
-
-      // Log the login event
-      console.log(`Login successful for user: ${user.username} at ${new Date().toISOString()}`);
-
-      // Set cookies for tokens
-      res.cookie("accessToken", token, { ...cookieOptions, maxAge: accessTokenExpire });
-      res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: refreshTokenExpire });
-
-      var authorities = [];
-      for (let i = 0; i < user.roles.length; i++) {
-        authorities.push(user.roles[i].name);
-      }
+      console.log(
+        `✅ Login successful for ${user.username} at ${new Date().toISOString()}`
+      );
 
       res.status(200).send({
         id: user._id,
@@ -118,200 +112,155 @@ exports.signin = (req, res) => {
     });
 };
 
-
+// ======================================================
+// 🔹 Sign Out
+// ======================================================
 exports.signout = (req, res) => {
-  // Clear the tokens
-  res.cookie('accessToken', '', { maxAge: 0, path: '/', httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "Strict" });
-  res.cookie('refreshToken', '', { maxAge: 0, path: '/', httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "Strict" });
+  res.cookie("accessToken", "", {
+    maxAge: 0,
+    path: "/",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+  });
+  res.cookie("refreshToken", "", {
+    maxAge: 0,
+    path: "/",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+  });
 
-  // Log the logout event
-  console.log(`Logout action at ${new Date().toISOString()}`);
-
+  console.log(`🚪 Logout at ${new Date().toISOString()}`);
   res.status(200).send({ message: "User has been logged out." });
 };
 
-
-
-
+// ======================================================
+// 🔹 Verify Session
+// ======================================================
 exports.verifySession = (req, res) => {
   if (req.user) {
-    const roles = req.user.roles.map(role => role.name);
+    const roles = req.user.roles.map((r) => r.name);
     const isAdmin = roles.includes("admin");
     const isMember = roles.includes("member");
 
-    res.status(200).json({
+    return res.status(200).json({
       isAuthenticated: true,
       user: {
         id: req.user._id,
         username: req.user.username,
         email: req.user.email,
-        roles: roles
-      },
-      isAdmin,
-      isMember
-    });
-  } else {
-    res.status(200).json({ isAuthenticated: false });
-  }
-};
-
-exports.refreshToken = async (req, res) => {
-  const refreshToken = req.cookies?.refreshToken;
-
-  if (!refreshToken) {
-    return res.status(401).send({ message: "Refresh token missing" });
-  }
-
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) => {
-    if (err) {
-      console.error("Invalid refresh token:", err.message);
-      return res.status(401).send({ message: "Invalid or expired refresh token" });
-    }
-
-    const userId = decoded.id;
-    if (!userId) {
-      return res.status(401).send({ message: "Invalid refresh token payload" });
-    }
-
-    // 🔹 Fetch user roles from database
-    const user = await User.findById(userId).populate("roles", "name");
-    if (!user) {
-      return res.status(404).send({ message: "User not found" });
-    }
-
-    const roles = user.roles.map((r) => r.name); // ["Admin", "User"]
-
-    // ----------------------------------------
-    // 🔹 Generate new access token WITH ROLES
-    // ----------------------------------------
-    const newAccessToken = jwt.sign(
-      {
-        id: userId,
-        username: user.username,
-        roles, // ✅ include roles here
-      },
-      process.env.ACCESS_TOKEN_SECRET,
-      {
-        expiresIn: process.env.ACCESS_TOKEN_EXPIRE || "300s",
-      }
-    );
-
-    // ----------------------------------------
-    // 🔹 Generate new refresh token (optional)
-    // ----------------------------------------
-    const newRefreshToken = jwt.sign(
-      { id: userId },
-      process.env.REFRESH_TOKEN_SECRET,
-      {
-        expiresIn: process.env.REFRESH_TOKEN_EXPIRE || "7d",
-      }
-    );
-
-    // ----------------------------------------
-    // 🔹 Set cookies
-    // ----------------------------------------
-    const isProd = process.env.NODE_ENV === "production";
-    const commonCookieOptions = {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? "None" : "Lax",
-    };
-
-    const accessTokenExpireTime =
-      (parseInt(process.env.ACCESS_TOKEN_EXPIRE, 10) || 300) * 1000;
-    const refreshTokenExpireTime =
-      (parseInt(process.env.REFRESH_TOKEN_EXPIRE, 10) || 604800) * 1000;
-
-    res.cookie("accessToken", newAccessToken, {
-      ...commonCookieOptions,
-      maxAge: accessTokenExpireTime,
-    });
-
-    res.cookie("refreshToken", newRefreshToken, {
-      ...commonCookieOptions,
-      maxAge: refreshTokenExpireTime,
-    });
-
-    // ----------------------------------------
-    // ✅ Respond with full user + tokens
-    // ----------------------------------------
-    return res.status(200).send({
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
         roles,
       },
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-      message: "Tokens refreshed successfully",
+      isAdmin,
+      isMember,
     });
-  });
+  }
+  return res.status(200).json({ isAuthenticated: false });
 };
 
-// Assuming the rest of the file is as provided
+// ======================================================
+// 🔹 Refresh Token
+// ======================================================
+exports.refreshToken = async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+  if (!refreshToken)
+    return res.status(401).send({ message: "Refresh token missing" });
+
+  jwt.verify(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET,
+    async (err, decoded) => {
+      if (err) {
+        console.error("Invalid refresh token:", err.message);
+        return res
+          .status(401)
+          .send({ message: "Invalid or expired refresh token" });
+      }
+
+      const userId = decoded.id;
+      if (!userId)
+        return res.status(401).send({ message: "Invalid token payload" });
+
+      const user = await User.findById(userId).populate("roles", "name");
+      if (!user) return res.status(404).send({ message: "User not found" });
+
+      const roles = user.roles.map((r) => r.name);
+
+      const newAccessToken = jwt.sign(
+        { id: userId, username: user.username, roles },
+        process.env.ACCESS_TOKEN_SECRET,
+        { expiresIn: process.env.ACCESS_TOKEN_EXPIRE || "300s" }
+      );
+
+      const newRefreshToken = jwt.sign(
+        { id: userId },
+        process.env.REFRESH_TOKEN_SECRET,
+        { expiresIn: process.env.REFRESH_TOKEN_EXPIRE || "7d" }
+      );
+
+      setAuthCookies(res, newAccessToken, newRefreshToken);
+
+      return res.status(200).send({
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          roles,
+        },
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        message: "Tokens refreshed successfully",
+      });
+    }
+  );
+};
+
+// ======================================================
+// 🔹 Social Sign In
+// ======================================================
 exports.socialSignIn = async (req, res) => {
   const { email, name, picture } = req.body;
-
-  // Extract username from email
   let baseUsername = email.substring(0, email.lastIndexOf("@"));
   let username = baseUsername;
 
   try {
-    let user = await User.findOne({ email })
-      .populate("roles", "-__v")
-      .exec();
+    let user = await User.findOne({ email }).populate("roles", "-__v").exec();
 
     if (!user) {
-      // Check if the username already exists
       let userExists = await User.findOne({ username }).exec();
-      let counter = 0; // Initialize counter for appending numbers
-
-      // If username exists, loop to find a unique username by appending numbers
+      let counter = 0;
       while (userExists) {
         counter++;
-        username = `${baseUsername}${String(counter).padStart(2, '0')}`; // Append numbers with leading zeros
-        userExists = await User.findOne({ username }).exec(); // Check again with the new username
+        username = `${baseUsername}${String(counter).padStart(2, "0")}`;
+        userExists = await User.findOne({ username }).exec();
       }
 
-      // Proceed with creating a new user with the unique username
       const memberRole = await Role.findOne({ name: "member" }).exec();
-      if (!memberRole) {
+      if (!memberRole)
         return res.status(500).send({ message: "Member role not found." });
-      }
 
       user = new User({
-        username, // Unique username
+        username,
         email,
-        name, // Store the full name from Google
+        name,
         avatar: picture,
         roles: [memberRole._id],
       });
 
       await user.save();
-
-      // Re-fetch or re-populate roles to ensure role names are included after the save
-      await user.populate("roles", "name").execPopulate();
+      await user.populate("roles", "name");
     }
 
-    // The rest of your code for generating tokens, setting cookies, and sending the response
     const token = user.signAccessToken();
     const refreshToken = user.signRefreshToken();
-    // Convert environment variable values to numbers for cookie maxAge
-    const accessTokenExpire = Number(process.env.ACCESS_TOKEN_EXPIRE) * 1000; // Convert seconds to milliseconds
-    const refreshTokenExpire = Number(process.env.REFRESH_TOKEN_EXPIRE) * 1000; // Convert seconds to milliseconds
 
-    // Set cookies for tokens
-    res.cookie('accessToken', token, { httpOnly: true, maxAge: accessTokenExpire });
-    res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: refreshTokenExpire });
+    setAuthCookies(res, token, refreshToken);
 
-    let authorities = [];
-    for (let i = 0; i < user.roles.length; i++) {
-      authorities.push(user.roles[i].name);
-    }
-
-    // Log the login event
-    console.log(`Social login successful for user: ${user.username} at ${new Date().toISOString()}`);
+    const authorities = user.roles.map((r) => r.name);
+    console.log(
+      `🌐 Social login success for ${user.username} at ${new Date().toISOString()}`
+    );
 
     res.status(200).send({
       id: user._id,
@@ -321,11 +270,10 @@ exports.socialSignIn = async (req, res) => {
       avatar: user.avatar,
       roles: authorities,
       accessToken: token,
-      refreshToken: refreshToken,
+      refreshToken,
     });
   } catch (error) {
-    console.error("Error processing the social sign-in request:", error);
-    return res.status(401).send({ message: "Unable to process the request." });
+    console.error("❌ Social sign-in error:", error);
+    res.status(401).send({ message: "Unable to process the request." });
   }
 };
-
