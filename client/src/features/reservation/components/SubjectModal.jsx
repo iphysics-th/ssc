@@ -245,18 +245,18 @@ const SubjectSelectionModal = ({
       price: Number.isFinite(Number(subject.price)) ? Number(subject.price) : 0,
       categoryInfo: category
         ? {
-            category_en: category.category_en,
-            category_th: category.category_th,
-            isActive: category.isActive !== false,
-          }
+          category_en: category.category_en,
+          category_th: category.category_th,
+          isActive: category.isActive !== false,
+        }
         : null,
       subcategoryInfo: subcategory
         ? {
-            subcategory_en: subcategory.subcategory_en,
-            subcategory_th: subcategory.subcategory_th,
-            isActive: subcategory.isActive !== false,
-            isCategoryActive: subcategory.isCategoryActive !== false,
-          }
+          subcategory_en: subcategory.subcategory_en,
+          subcategory_th: subcategory.subcategory_th,
+          isActive: subcategory.isActive !== false,
+          isCategoryActive: subcategory.isCategoryActive !== false,
+        }
         : null,
       isAvailable: subjectOpen && !capacityExceeded,
       availability: {
@@ -562,21 +562,31 @@ const SubjectSelectionModal = ({
       <Drawer
         title={selectedSubjectDetail?.name_th || "รายละเอียดคอร์ส"}
         placement="right"
-        width={400}
+        width={420}
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
+        bodyStyle={{ padding: 20, background: "#f9fafb" }}
       >
         {selectedSubjectDetail ? (
-          <div>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 16,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            }}
+          >
             {/* Thumbnail */}
             <div
               style={{
                 width: "100%",
                 aspectRatio: "1 / 1",
-                background: "#f8fafc",
+                background: "#f1f5f9",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                borderRadius: 8,
+                overflow: "hidden",
                 marginBottom: 16,
               }}
             >
@@ -588,7 +598,6 @@ const SubjectSelectionModal = ({
                     width: "100%",
                     height: "100%",
                     objectFit: "cover",
-                    borderRadius: 8,
                   }}
                 />
               ) : (
@@ -596,39 +605,78 @@ const SubjectSelectionModal = ({
               )}
             </div>
 
+            {/* Title & Code */}
+            <Title
+              level={4}
+              style={{
+                marginBottom: 4,
+                color: "#0f172a",
+                fontWeight: 700,
+                lineHeight: 1.3,
+              }}
+            >
+              {selectedSubjectDetail.name_th}
+            </Title>
+            <Text type="secondary" style={{ fontSize: 14 }}>
+              รหัสวิชา: {selectedSubjectDetail.code}
+            </Text>
+
             {/* Breadcrumb */}
             <Breadcrumb
-              style={{ marginBottom: 8 }}
+              style={{ margin: "10px 0 14px" }}
               items={[
                 {
                   title:
-                    findSubjectByCode(selectedSubject)?.category?.category_th ||
-                    "",
+                    findSubjectByCode(selectedSubject)?.category?.category_th || "",
                 },
                 {
                   title:
-                    findSubjectByCode(selectedSubject)?.subcategory
-                      ?.subcategory_th || "",
+                    findSubjectByCode(selectedSubject)?.subcategory?.subcategory_th ||
+                    "",
                 },
               ]}
             />
 
-            {/* Price and Limit */}
+            {/* Highlighted Price */}
             <div
               style={{
-                display: "flex",
-                gap: 8,
-                marginBottom: 12,
+                background: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                borderRadius: 10,
+                padding: "10px 14px",
+                marginBottom: 16,
+                textAlign: "center",
               }}
             >
-              <Tag color="blue">
+              <Title
+                level={3}
+                style={{
+                  margin: 0,
+                  color: "#2563eb",
+                  fontWeight: 800,
+                }}
+              >
                 ฿{Number(selectedSubjectDetail.price || 0).toLocaleString("th-TH")}
-              </Tag>
-              <Tag color="green">
-                จำนวนนักเรียนสูงสุด {selectedSubjectDetail.student_max} คน
-              </Tag>
+              </Title>
+              <Text style={{ color: "#475569" }}>ราคาต่อคอร์ส</Text>
             </div>
 
+            {/* Course Info */}
+            <div style={{ marginBottom: 16 }}>
+              <Space direction="vertical" size={6} style={{ width: "100%" }}>
+                <Tag color="blue">ระดับชั้น: {selectedSubjectDetail.level_th}</Tag>
+                <Tag color="green">
+                  จำนวนนักเรียนสูงสุด: {selectedSubjectDetail.student_max} คน
+                </Tag>
+                {selectedSubjectDetail.total_classroom && (
+                  <Tag color="purple">
+                    จำนวนห้องที่เปิด: {selectedSubjectDetail.total_classroom} ห้อง
+                  </Tag>
+                )}
+              </Space>
+            </div>
+
+            {/* Warnings */}
             {!selectedSubjectDetail.isAvailable && availabilityNotice.length > 0 && (
               <Alert
                 type="warning"
@@ -639,47 +687,47 @@ const SubjectSelectionModal = ({
               />
             )}
 
-            {/* Summary */}
+            {/* Description */}
             <Paragraph
               style={{
                 color: "#334155",
                 maxHeight: 240,
                 overflowY: "auto",
                 marginBottom: 20,
+                lineHeight: 1.6,
               }}
             >
-              {selectedSubjectDetail.description ||
+              {selectedSubjectDetail.description_th ||
                 "ไม่มีรายละเอียดคอร์สเพิ่มเติม"}
             </Paragraph>
 
-            <div style={{ display: "flex", gap: 10 }}>
-              <Button
-                type="primary"
-                icon={<ArrowRightOutlined />}
-                onClick={() =>
-                  navigate(`/courses/${selectedSubjectDetail.code}`)
+            {/* Button */}
+            <Button
+              type="primary"
+              block
+              size="large"
+              style={{
+                background: "#1677ff",
+                fontWeight: 600,
+                letterSpacing: 0.5,
+              }}
+              disabled={!selectedSubjectDetail?.isAvailable}
+              onClick={() => {
+                const success = handleOk();
+                if (success) {
+                  setDrawerVisible(false);
+                  handleCancel();
                 }
-              >
-                ดูรายละเอียดเพิ่มเติม
-              </Button>
-              <Button
-                disabled={!selectedSubjectDetail?.isAvailable}
-                onClick={() => {
-                  const success = handleOk();
-                  if (success) {
-                    setDrawerVisible(false);
-                    handleCancel();
-                  }
-                }}
-              >
-                เลือกคอร์สนี้
-              </Button>
-            </div>
+              }}
+            >
+              เลือกคอร์สนี้
+            </Button>
           </div>
         ) : (
           <Empty description="ไม่มีข้อมูลคอร์ส" />
         )}
       </Drawer>
+
     </>
   );
 };
