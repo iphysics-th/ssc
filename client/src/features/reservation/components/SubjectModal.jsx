@@ -47,6 +47,14 @@ const SubjectSelectionModal = ({
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedSubjectDetail, setSelectedSubjectDetail] = useState(null); // 👈 New
   const [drawerVisible, setDrawerVisible] = useState(false); // 👈 New
+  const backendUrl = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "");
+
+  const resolveImageUrl = (imagePath) => {
+    if (!imagePath || typeof imagePath !== "string") return null;
+    if (/^https?:\/\//i.test(imagePath)) return imagePath;
+    const normalized = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
+    return `${backendUrl}${normalized}`;
+  };
 
   const navigate = useNavigate();
 
@@ -463,6 +471,7 @@ const SubjectSelectionModal = ({
                               const capacityExceeded = subject.student_max < numberOfStudents;
                               const disabled = !subjectOpen || capacityExceeded;
                               const isSelected = selectedSubject === subject.code;
+                              const subjectImage = resolveImageUrl(subject.image);
 
                               return (
                                 <Card
@@ -487,16 +496,28 @@ const SubjectSelectionModal = ({
                                       style={{
                                         width: "100%",
                                         aspectRatio: "4 / 3",
-                                        background: "#f8fafc",
+                                        background: subjectImage ? "#000" : "#f8fafc",
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
                                         fontSize: 36,
                                         color: "#94a3b8",
                                         borderBottom: "1px solid #e2e8f0",
-                                      }}
+                                        }}
                                     >
-                                      <AppstoreOutlined />
+                                      {subjectImage ? (
+                                        <img
+                                          src={subjectImage}
+                                          alt={subject.name_th || subject.code}
+                                          style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "cover",
+                                          }}
+                                        />
+                                      ) : (
+                                        <AppstoreOutlined />
+                                      )}
                                     </div>
                                   }
                                 >
@@ -581,7 +602,9 @@ const SubjectSelectionModal = ({
               style={{
                 width: "100%",
                 aspectRatio: "1 / 1",
-                background: "#f1f5f9",
+                background: resolveImageUrl(selectedSubjectDetail.image)
+                  ? "#000"
+                  : "#f1f5f9",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -590,9 +613,9 @@ const SubjectSelectionModal = ({
                 marginBottom: 16,
               }}
             >
-              {selectedSubjectDetail.thumbnail ? (
+              {resolveImageUrl(selectedSubjectDetail.image) ? (
                 <img
-                  src={`${process.env.REACT_APP_BACKEND_URL}/${selectedSubjectDetail.thumbnail}`}
+                  src={resolveImageUrl(selectedSubjectDetail.image)}
                   alt={selectedSubjectDetail.name_th}
                   style={{
                     width: "100%",
