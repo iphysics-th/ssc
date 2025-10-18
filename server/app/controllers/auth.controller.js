@@ -148,15 +148,14 @@ exports.verifySession = (req, res) => {
   }
 };
 
-
-exports.refreshToken = (req, res) => {
+exports.refreshToken = async (req, res) => {
   const refreshToken = req.cookies?.refreshToken;
 
   if (!refreshToken) {
     return res.status(401).send({ message: "Refresh token missing" });
   }
 
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) => {
     if (err) {
       console.error("Invalid refresh token:", err.message);
       return res.status(401).send({ message: "Invalid or expired refresh token" });
@@ -167,42 +166,54 @@ exports.refreshToken = (req, res) => {
       return res.status(401).send({ message: "Invalid refresh token payload" });
     }
 
+    // 🔹 Fetch user roles from database
+    const user = await User.findById(userId).populate("roles", "name");
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    const roles = user.roles.map((r) => r.name); // ["Admin", "User"]
+
     // ----------------------------------------
-    // 🔹 Generate new access token
+    // 🔹 Generate new access token WITH ROLES
     // ----------------------------------------
     const newAccessToken = jwt.sign(
-      { id: userId },
+      {
+        id: userId,
+        username: user.username,
+        roles, // ✅ include roles here
+      },
       process.env.ACCESS_TOKEN_SECRET,
       {
-        expiresIn: process.env.ACCESS_TOKEN_EXPIRE || "300s", // default 5 minutes
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRE || "300s",
       }
     );
 
     // ----------------------------------------
-    // 🔹 Generate new refresh token (optional but safer)
+    // 🔹 Generate new refresh token (optional)
     // ----------------------------------------
     const newRefreshToken = jwt.sign(
       { id: userId },
       process.env.REFRESH_TOKEN_SECRET,
       {
-        expiresIn: process.env.REFRESH_TOKEN_EXPIRE || "7d", // default 7 days
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRE || "7d",
       }
     );
 
     // ----------------------------------------
-    // 🔹 Set proper cookie options
+    // 🔹 Set cookies
     // ----------------------------------------
     const isProd = process.env.NODE_ENV === "production";
-    const accessTokenExpireTime =
-      (parseInt(process.env.ACCESS_TOKEN_EXPIRE, 10) || 300) * 1000;
-    const refreshTokenExpireTime =
-      (parseInt(process.env.REFRESH_TOKEN_EXPIRE, 10) || 604800) * 1000; // 7 days in ms
-
     const commonCookieOptions = {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? "None" : "Lax", // ✅ Allow cross-site on HTTPS production
+      sameSite: isProd ? "None" : "Lax",
     };
+
+    const accessTokenExpireTime =
+      (parseInt(process.env.ACCESS_TOKEN_EXPIRE, 10) || 300) * 1000;
+    const refreshTokenExpireTime =
+      (parseInt(process.env.REFRESH_TOKEN_EXPIRE, 10) || 604800) * 1000;
 
     res.cookie("accessToken", newAccessToken, {
       ...commonCookieOptions,
@@ -215,16 +226,21 @@ exports.refreshToken = (req, res) => {
     });
 
     // ----------------------------------------
-    // ✅ Respond with new tokens
+    // ✅ Respond with full user + tokens
     // ----------------------------------------
     return res.status(200).send({
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        roles,
+      },
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
       message: "Tokens refreshed successfully",
     });
   });
 };
-
 
 // Assuming the rest of the file is as provided
 exports.socialSignIn = async (req, res) => {
