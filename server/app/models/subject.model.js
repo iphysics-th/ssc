@@ -12,7 +12,11 @@ module.exports = mongoose => {
     subcategory_th: { type: String, required: true },
     subcategory_en: { type: String, required: true },
     description_th: { type: [String], required: true },
-    student_max: { type: Number, required: true }
+    student_max: { type: Number, required: true },
+    total_classrooms: { type: Number, default: 1 },
+    price: { type: Number, default: null },
+    image: { type: String, default: "" },
+    isActive: { type: Boolean, default: true }
   }, {
     timestamps: true
   });

@@ -43,7 +43,6 @@ const CourseSelection = forwardRef(({ onNext, embedded = false }, ref) => {
   const [isStudentModalVisible, setIsStudentModalVisible] = useState(false); // State for modal visibility
   const navigate = useNavigate();
   const { formData, updateFormData } = useFormData(); // Use the context
-  const [currentSelection, setCurrentSelection] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingContext, setEditingContext] = useState({ date: null, slot: null });
   const { data: availabilityData } = useGetConfirmedReservationsQuery();
@@ -238,9 +237,6 @@ const CourseSelection = forwardRef(({ onNext, embedded = false }, ref) => {
   const handleCancel = () => {
     setIsModalVisible(false);
   };
-
-  const [currentDate, setCurrentDate] = useState(null);
-  const [currentSlot, setCurrentSlot] = useState(null);
 
   const showModal = (date, slot) => {
     setEditingContext({ date, slot });

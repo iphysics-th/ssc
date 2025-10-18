@@ -6,6 +6,7 @@ import UserProfile from './UserProfile';
 import UserReservations from './UserReservations';
 import ReservationTable from '../Admin/reservationData';
 import SlideUploadComponent from '../Admin/slideUpload';
+import CourseManagement from '../Admin/CourseManagement';
 import UserManagement from './UserManagement';
 import './Dashboard.css';
 
@@ -29,6 +30,7 @@ const Dashboard = () => {
       items.push(
         { key: 'reservation-data', label: 'ข้อมูลการจองทั้งหมด' },
         { key: 'slide-upload', label: 'อัปโหลดสไลด์' },
+        { key: 'course-management', label: 'จัดการคอร์ส' },
         { key: 'user-management', label: 'จัดการผู้ใช้' },
       );
     }
@@ -63,6 +65,7 @@ const Dashboard = () => {
             {selectedKey === 'my-reservations' && <UserReservations />}
             {isAdmin && selectedKey === 'reservation-data' && <ReservationTable />}
             {isAdmin && selectedKey === 'slide-upload' && <SlideUploadComponent />}
+            {isAdmin && selectedKey === 'course-management' && <CourseManagement />}
             {isAdmin && selectedKey === 'user-management' && <UserManagement />}
           </Content>
         </Layout>

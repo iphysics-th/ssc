@@ -1,5 +1,23 @@
 const db = require("../models");
 const Subject = db.subject; // Assuming your subject model is named 'subject' in db
+const CategoryStatus = db.categoryStatus;
+const SubcategoryStatus = db.subcategoryStatus;
+
+const parseBoolean = (value) => {
+    if (typeof value === "boolean") {
+        return value;
+    }
+    if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+        if (["true", "1", "yes", "on"].includes(normalized)) {
+            return true;
+        }
+        if (["false", "0", "no", "off"].includes(normalized)) {
+            return false;
+        }
+    }
+    return undefined;
+};
 
 
 exports.findAllLevels = async (req, res) => {
@@ -52,6 +70,11 @@ exports.findLevel = async (req, res) => {
     try {
         // Fetch categories with their English and Thai names
         const subjects = await Subject.find({ level_en: level }, 'category_en category_th');
+        const categoryStatuses = await CategoryStatus.find({ level_en: level }).lean();
+        const categoryStatusMap = categoryStatuses.reduce((acc, item) => {
+            acc[item.category_en] = item.isActive !== false;
+            return acc;
+        }, {});
 
         // Reduce the fetched subjects to a unique set of categories with both English and Thai names
         const categoriesMap = subjects.reduce((acc, subject) => {
@@ -74,11 +97,26 @@ exports.findLevel = async (req, res) => {
         // Include any additional categories not predefined in the order
         Object.keys(categoriesMap).forEach((category) => {
             if (!order.includes(category)) {
-                orderedCategories.push({ category_en: category, category_th: categoriesMap[category] });
+                orderedCategories.push({
+                    category_en: category,
+                    category_th: categoriesMap[category],
+                    isActive: categoryStatusMap[category] ?? true,
+                });
             }
         });
 
-        res.status(200).send(orderedCategories);
+        const response = orderedCategories.map((category, index) => {
+            if (category.isActive === undefined) {
+                return {
+                    ...category,
+                    isActive: categoryStatusMap[category.category_en] ?? true,
+                };
+            }
+
+            return category;
+        });
+
+        res.status(200).send(response);
     } catch (error) {
         res.status(500).send({ message: error.message || "Some error occurred while retrieving subjects." });
     }
@@ -90,31 +128,47 @@ exports.findSubcategoriesByCategory = async (req, res) => {
     const { level, category } = req.params; // Capture the level and category from the URL parameters
 
     try {
-        // Use aggregation to find distinct subcategory_en values for a given level_en and category_en
-        const subcategories = await Subject.aggregate([
-            {
-                $match: {
-                    level_en: level, // Match documents by level
-                    category_en: category // And by category
-                }
-            },
-            {
-                $group: {
-                    _id: "$subcategory_en", // Group by subcategory_en
-                    subcategory_th: { $first: "$subcategory_th" } // Capture the corresponding Thai name
-                }
-            },
-            {
-                $project: {
-                    _id: 0, // Exclude the _id field
-                    subcategory_en: "$_id", // Rename _id to subcategory_en
-                    subcategory_th: 1 // Include subcategory_th
-                }
-            },
-            { $sort: { subcategory_en: 1 } } // Optionally, sort the results alphabetically by subcategory_en
+        const [subcategoryStatusDocs, categoryStatusDoc, subcategories] = await Promise.all([
+            SubcategoryStatus.find({ level_en: level, category_en: category }).lean(),
+            CategoryStatus.findOne({ level_en: level, category_en: category }).lean(),
+            Subject.aggregate([
+                {
+                    $match: {
+                        level_en: level,
+                        category_en: category,
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$subcategory_en",
+                        subcategory_th: { $first: "$subcategory_th" },
+                    },
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        subcategory_en: "$_id",
+                        subcategory_th: 1,
+                    },
+                },
+                { $sort: { subcategory_en: 1 } },
+            ]),
         ]);
 
-        res.status(200).send(subcategories);
+        const subcategoryStatusMap = subcategoryStatusDocs.reduce((acc, item) => {
+            acc[item.subcategory_en] = item.isActive !== false;
+            return acc;
+        }, {});
+
+        const isCategoryActive = categoryStatusDoc ? categoryStatusDoc.isActive !== false : true;
+
+        const response = subcategories.map((sub) => ({
+            ...sub,
+            isActive: subcategoryStatusMap[sub.subcategory_en] ?? true,
+            isCategoryActive,
+        }));
+
+        res.status(200).send(response);
     } catch (error) {
         res.status(500).send({ message: error.message || "Some error occurred while retrieving subcategories." });
     }
@@ -126,18 +180,51 @@ exports.findCodesByCategory = async (req, res) => {
     const { level, category, subcategory } = req.params;
 
     try {
-        const subjects = await Subject.find({
-            level_en: level,
-            category_en: category,
-            subcategory_en: subcategory
-        }, 'code name_th student_max') // Added student_max to the projection
-        .sort('code');
+        const [subjects, categoryStatusDoc, subcategoryStatusDoc] = await Promise.all([
+            Subject.find(
+                {
+                    level_en: level,
+                    category_en: category,
+                    subcategory_en: subcategory,
+                },
+                "code name_th student_max price image description_th level_en level_th category_en category_th subcategory_en subcategory_th total_classrooms slot isActive"
+            )
+                .sort("code")
+                .lean(),
+            CategoryStatus.findOne({ level_en: level, category_en: category }).lean(),
+            SubcategoryStatus.findOne({
+                level_en: level,
+                category_en: category,
+                subcategory_en: subcategory,
+            }).lean(),
+        ]);
 
-        const responseData = subjects.map(subject => ({
-            code: subject.code,
-            name_th: subject.name_th,
-            student_max: subject.student_max // Include student_max in the response
-        }));
+        const isCategoryActive = categoryStatusDoc ? categoryStatusDoc.isActive !== false : true;
+        const isSubcategoryActive = subcategoryStatusDoc ? subcategoryStatusDoc.isActive !== false : true;
+
+        const responseData = subjects.map((subject) => {
+            const isSubjectActive = subject.isActive !== false;
+            return {
+                id: subject._id,
+                code: subject.code,
+                name_th: subject.name_th,
+                student_max: subject.student_max,
+                price: subject.price,
+                image: subject.image,
+                description_th: subject.description_th,
+                level_en: subject.level_en,
+                level_th: subject.level_th,
+                category_en: subject.category_en,
+                category_th: subject.category_th,
+                subcategory_en: subject.subcategory_en,
+                subcategory_th: subject.subcategory_th,
+                total_classrooms: subject.total_classrooms,
+                slot: subject.slot,
+                isActive: isSubjectActive,
+                isCategoryActive,
+                isSubcategoryActive,
+            };
+        });
 
         res.status(200).send(responseData);
     } catch (error) {
@@ -145,4 +232,276 @@ exports.findCodesByCategory = async (req, res) => {
     }
 };
 
+exports.getSubjectById = async (req, res) => {
+    try {
+        const subject = await Subject.findById(req.params.id);
+        if (!subject) {
+            return res.status(404).json({ message: "Subject not found" });
+        }
+        res.json(subject);
+    } catch (error) {
+        res.status(500).json({ message: error.message || "Failed to retrieve subject" });
+    }
+};
 
+exports.updateSubject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            name_th,
+            code,
+            student_max,
+            description_th,
+            price,
+            image,
+            level_en,
+            level_th,
+            category_en,
+            category_th,
+            subcategory_en,
+            subcategory_th,
+            total_classrooms,
+        } = req.body;
+
+        const updatePayload = {};
+
+        if (name_th !== undefined) updatePayload.name_th = name_th;
+        if (code !== undefined) updatePayload.code = code;
+        if (student_max !== undefined) updatePayload.student_max = Number(student_max);
+        if (level_en !== undefined) updatePayload.level_en = level_en;
+        if (level_th !== undefined) updatePayload.level_th = level_th;
+        if (category_en !== undefined) updatePayload.category_en = category_en;
+        if (category_th !== undefined) updatePayload.category_th = category_th;
+        if (subcategory_en !== undefined) updatePayload.subcategory_en = subcategory_en;
+        if (subcategory_th !== undefined) updatePayload.subcategory_th = subcategory_th;
+        if (total_classrooms !== undefined) {
+            const parsedTotal = Number(total_classrooms);
+            if (!Number.isNaN(parsedTotal)) {
+                updatePayload.total_classrooms = parsedTotal;
+            }
+        }
+        if (price !== undefined) {
+            const parsedPrice = price === '' ? null : Number(price);
+            if (parsedPrice === null || !Number.isNaN(parsedPrice)) {
+                updatePayload.price = parsedPrice;
+            }
+        }
+        if (req.body.slot !== undefined) {
+            const parsedSlot = Number(req.body.slot);
+            if (!Number.isNaN(parsedSlot)) {
+                updatePayload.slot = parsedSlot;
+            }
+        }
+        if (req.body.isActive !== undefined) {
+            const parsedActive = parseBoolean(req.body.isActive);
+            if (parsedActive !== undefined) {
+                updatePayload.isActive = parsedActive;
+            }
+        }
+        if (image !== undefined && image !== '') updatePayload.image = image;
+        if (req.file) {
+            updatePayload.image = `/course-images/${req.file.filename}`;
+        }
+        if (description_th !== undefined) {
+            if (Array.isArray(description_th)) {
+                updatePayload.description_th = description_th;
+            } else if (typeof description_th === "string") {
+                updatePayload.description_th = description_th
+                    .split(/\r?\n/)
+                    .map((line) => line.trim())
+                    .filter(Boolean);
+            }
+        }
+
+        const updatedSubject = await Subject.findByIdAndUpdate(id, updatePayload, {
+            new: true,
+            runValidators: true,
+        });
+
+        if (!updatedSubject) {
+            return res.status(404).json({ message: "Subject not found" });
+        }
+
+        res.json(updatedSubject);
+    } catch (error) {
+        res.status(500).json({ message: error.message || "Failed to update subject" });
+    }
+};
+
+exports.createSubject = async (req, res) => {
+    try {
+        const {
+            name_th,
+            code,
+            student_max,
+            level_en,
+            level_th,
+            category_en,
+            category_th,
+            subcategory_en,
+            subcategory_th,
+            description_th,
+            price,
+            slot,
+            total_classrooms,
+            isActive,
+        } = req.body;
+
+        const parsedStudentMax = Number(student_max);
+        const parsedPrice = Number(price);
+        const parsedTotalClassrooms = Number(total_classrooms || 1);
+
+        if (!name_th || !code || !level_en || !category_en || !subcategory_en ||
+            Number.isNaN(parsedStudentMax) || parsedStudentMax <= 0 ||
+            Number.isNaN(parsedPrice) || parsedPrice < 0) {
+            return res.status(400).json({ message: "กรุณากรอกข้อมูลคอร์สให้ครบถ้วน" });
+        }
+
+        const existing = await Subject.findOne({ code });
+        if (existing) {
+            return res.status(400).json({ message: "มีรหัสคอร์สนี้อยู่แล้ว" });
+        }
+
+        let descriptionArray = [];
+        if (Array.isArray(description_th)) {
+            descriptionArray = description_th;
+        } else if (typeof description_th === "string") {
+            descriptionArray = description_th
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter(Boolean);
+        }
+
+        const payload = {
+            name_th,
+            code,
+            level_en,
+            level_th: level_th || level_en,
+            category_en,
+            category_th: category_th || category_en,
+            subcategory_en,
+            subcategory_th: subcategory_th || subcategory_en,
+            student_max: parsedStudentMax,
+            price: price === '' ? null : parsedPrice,
+            slot: Number(slot || 1),
+            total_classrooms: Number.isNaN(parsedTotalClassrooms) || parsedTotalClassrooms <= 0 ? 1 : parsedTotalClassrooms,
+            description_th: descriptionArray.length ? descriptionArray : [""],
+        };
+
+        const parsedIsActive = parseBoolean(isActive);
+        if (parsedIsActive !== undefined) {
+            payload.isActive = parsedIsActive;
+        }
+
+        if (req.file) {
+            payload.image = `/course-images/${req.file.filename}`;
+        }
+
+        const subject = new Subject(payload);
+        await subject.save();
+
+        res.status(201).json(subject);
+    } catch (error) {
+        res.status(500).json({ message: error.message || "Failed to create subject" });
+    }
+};
+
+exports.deleteSubject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deleted = await Subject.findByIdAndDelete(id);
+        if (!deleted) {
+            return res.status(404).json({ message: "Subject not found" });
+        }
+        res.status(200).json({ message: "Subject deleted" });
+    } catch (error) {
+        res.status(500).json({ message: error.message || "Failed to delete subject" });
+    }
+};
+
+exports.updateSubjectStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const parsedActive = parseBoolean(req.body.isActive);
+        if (parsedActive === undefined) {
+            return res.status(400).json({ message: "Invalid status value" });
+        }
+
+        const updated = await Subject.findByIdAndUpdate(
+            id,
+            { isActive: parsedActive },
+            { new: true, runValidators: true }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ message: "Subject not found" });
+        }
+
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ message: error.message || "Failed to update subject status" });
+    }
+};
+
+exports.updateCategoryStatus = async (req, res) => {
+    try {
+        const { level_en, category_en, category_th, isActive } = req.body;
+        const parsedActive = parseBoolean(isActive);
+
+        if (!level_en || !category_en || parsedActive === undefined) {
+            return res.status(400).json({ message: "Invalid category status payload" });
+        }
+
+        const update = {
+            level_en,
+            category_en,
+            isActive: parsedActive,
+        };
+
+        if (category_th !== undefined) {
+            update.category_th = category_th;
+        }
+
+        const result = await CategoryStatus.findOneAndUpdate(
+            { level_en, category_en },
+            update,
+            { new: true, upsert: true, setDefaultsOnInsert: true }
+        );
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: error.message || "Failed to update category status" });
+    }
+};
+
+exports.updateSubcategoryStatus = async (req, res) => {
+    try {
+        const { level_en, category_en, subcategory_en, subcategory_th, isActive } = req.body;
+        const parsedActive = parseBoolean(isActive);
+
+        if (!level_en || !category_en || !subcategory_en || parsedActive === undefined) {
+            return res.status(400).json({ message: "Invalid subcategory status payload" });
+        }
+
+        const update = {
+            level_en,
+            category_en,
+            subcategory_en,
+            isActive: parsedActive,
+        };
+
+        if (subcategory_th !== undefined) {
+            update.subcategory_th = subcategory_th;
+        }
+
+        const result = await SubcategoryStatus.findOneAndUpdate(
+            { level_en, category_en, subcategory_en },
+            update,
+            { new: true, upsert: true, setDefaultsOnInsert: true }
+        );
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: error.message || "Failed to update subcategory status" });
+    }
+};

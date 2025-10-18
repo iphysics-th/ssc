@@ -150,7 +150,7 @@ exports.verifySession = (req, res) => {
 
 
 exports.refreshToken = (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
+  const refreshToken = req.cookies?.refreshToken;
 
   if (!refreshToken) {
     return res.status(401).send({ message: "Refresh token missing" });
@@ -158,38 +158,69 @@ exports.refreshToken = (req, res) => {
 
   jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
     if (err) {
-      return res.status(401).send({ message: "Invalid refresh token" });
+      console.error("Invalid refresh token:", err.message);
+      return res.status(401).send({ message: "Invalid or expired refresh token" });
     }
 
     const userId = decoded.id;
-
     if (!userId) {
       return res.status(401).send({ message: "Invalid refresh token payload" });
     }
 
-    // Generate a new access token
-    const newAccessToken = jwt.sign({ id: userId }, process.env.ACCESS_TOKEN_SECRET, {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRE // Ensure this is in seconds
-    });
+    // ----------------------------------------
+    // 🔹 Generate new access token
+    // ----------------------------------------
+    const newAccessToken = jwt.sign(
+      { id: userId },
+      process.env.ACCESS_TOKEN_SECRET,
+      {
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRE || "300s", // default 5 minutes
+      }
+    );
 
-    // Convert ACCESS_TOKEN_EXPIRE from seconds to milliseconds for maxAge
-    const accessTokenExpireTime = process.env.ACCESS_TOKEN_EXPIRE ? parseInt(process.env.ACCESS_TOKEN_EXPIRE, 10) * 1000 : 300000; // Default 5 minutes if not set
+    // ----------------------------------------
+    // 🔹 Generate new refresh token (optional but safer)
+    // ----------------------------------------
+    const newRefreshToken = jwt.sign(
+      { id: userId },
+      process.env.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRE || "7d", // default 7 days
+      }
+    );
 
-    // Add secure and SameSite attributes if your site is served over HTTPS
-    const cookieOptions = {
+    // ----------------------------------------
+    // 🔹 Set proper cookie options
+    // ----------------------------------------
+    const isProd = process.env.NODE_ENV === "production";
+    const accessTokenExpireTime =
+      (parseInt(process.env.ACCESS_TOKEN_EXPIRE, 10) || 300) * 1000;
+    const refreshTokenExpireTime =
+      (parseInt(process.env.REFRESH_TOKEN_EXPIRE, 10) || 604800) * 1000; // 7 days in ms
+
+    const commonCookieOptions = {
       httpOnly: true,
-      maxAge: accessTokenExpireTime,
-      secure: process.env.NODE_ENV === "production", // Ensure cookies are sent securely in production
-      sameSite: "Strict" // Helps mitigate CSRF attacks
+      secure: isProd,
+      sameSite: isProd ? "None" : "Lax", // ✅ Allow cross-site on HTTPS production
     };
 
-    res.cookie('accessToken', newAccessToken, cookieOptions);
+    res.cookie("accessToken", newAccessToken, {
+      ...commonCookieOptions,
+      maxAge: accessTokenExpireTime,
+    });
 
-    // Optionally, issue a new refresh token if your logic requires it
+    res.cookie("refreshToken", newRefreshToken, {
+      ...commonCookieOptions,
+      maxAge: refreshTokenExpireTime,
+    });
 
-    res.status(200).send({
+    // ----------------------------------------
+    // ✅ Respond with new tokens
+    // ----------------------------------------
+    return res.status(200).send({
       accessToken: newAccessToken,
-      message: "Access token updated successfully."
+      refreshToken: newRefreshToken,
+      message: "Tokens refreshed successfully",
     });
   });
 };

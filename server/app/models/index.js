@@ -12,6 +12,8 @@ db.lecturer = require("./lecturer.model")(mongoose);
 db.reservation = require("./reservation.model")(mongoose);
 db.slideshow = require("./slide.model");
 db.subject = require("./subject.model")(mongoose);
+db.categoryStatus = require("./categoryStatus.model")(mongoose);
+db.subcategoryStatus = require("./subcategoryStatus.model")(mongoose);
 
 db.ROLES = ["admin", "member", "student", "staff","moderator"];
 

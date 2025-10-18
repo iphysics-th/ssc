@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Button,
@@ -11,6 +11,8 @@ import {
   Typography,
   Drawer,
   Breadcrumb,
+  Space,
+  message,
 } from "antd";
 import {
   BookOutlined,
@@ -69,6 +71,33 @@ const SubjectSelectionModal = ({
     setSelectedSubcategory(null);
     setSelectedSubject(null);
     setDrawerVisible(false);
+  };
+
+  const isCategoryOpen = (category) => !category || category.isActive !== false;
+
+  const isSubcategoryOpen = (subcategory, category) => {
+    if (!subcategory) {
+      return isCategoryOpen(category);
+    }
+    const categoryOpen = isCategoryOpen(category);
+    return (
+      categoryOpen &&
+      subcategory.isActive !== false &&
+      subcategory.isCategoryActive !== false
+    );
+  };
+
+  const isSubjectOpen = (subject, category, subcategory) => {
+    if (!subject) {
+      return false;
+    }
+    const subcategoryOpen = isSubcategoryOpen(subcategory, category);
+    return (
+      subcategoryOpen &&
+      subject.isActive !== false &&
+      subject.isCategoryActive !== false &&
+      subject.isSubcategoryActive !== false
+    );
   };
 
   const handleLevelChange = async (levelKey) => {
@@ -139,23 +168,135 @@ const SubjectSelectionModal = ({
     return null;
   };
 
-  const handleSubjectClick = (subject) => {
+  const selectedRecord = useMemo(
+    () => (selectedSubject ? findSubjectByCode(selectedSubject) : null),
+    [selectedSubject, structuredSubjects]
+  );
+
+  const selectedCategoryData = useMemo(
+    () =>
+      selectedCategory
+        ? structuredSubjects.find((cat) => cat.category_en === selectedCategory) || null
+        : null,
+    [structuredSubjects, selectedCategory]
+  );
+
+  const canConfirmSelection = useMemo(() => {
+    if (!selectedRecord) {
+      return false;
+    }
+
+    if (selectedRecord.subject.student_max < numberOfStudents) {
+      return false;
+    }
+
+    return isSubjectOpen(
+      selectedRecord.subject,
+      selectedRecord.category,
+      selectedRecord.subcategory
+    );
+  }, [selectedRecord, numberOfStudents]);
+
+  const availabilityNotice = useMemo(() => {
+    const details = selectedSubjectDetail;
+    if (!details?.availability) {
+      return [];
+    }
+
+    const { categoryOpen, subcategoryOpen, subjectOpen, capacityAvailable } =
+      details.availability;
+
+    const reasons = [];
+
+    if (!categoryOpen) {
+      reasons.push("กลุ่มวิชาปิดรับ");
+    }
+
+    if (categoryOpen && !subcategoryOpen) {
+      reasons.push("หัวข้อย่อยปิดรับ");
+    }
+
+    if (categoryOpen && subcategoryOpen && !subjectOpen) {
+      reasons.push("คอร์สปิดรับ");
+    }
+
+    if (!capacityAvailable) {
+      reasons.push("จำนวนผู้เรียนเกินโควต้า");
+    }
+
+    return reasons;
+  }, [selectedSubjectDetail]);
+
+  const handleSubjectClick = (subject, category, subcategory) => {
+    const subjectOpen = isSubjectOpen(subject, category, subcategory);
+    const capacityExceeded = subject.student_max < numberOfStudents;
+
+    if (!subjectOpen) {
+      message.warning("คอร์สนี้ปิดรับแล้ว");
+    } else if (capacityExceeded) {
+      message.warning("จำนวนผู้เรียนเกินกว่าที่คอร์สเปิดรับ");
+    }
+
     setSelectedSubject(subject.code);
-    setSelectedSubjectDetail(subject);
+    setSelectedSubjectDetail({
+      ...subject,
+      categoryInfo: category
+        ? {
+          category_en: category.category_en,
+          category_th: category.category_th,
+          isActive: category.isActive !== false,
+        }
+        : null,
+      subcategoryInfo: subcategory
+        ? {
+          subcategory_en: subcategory.subcategory_en,
+          subcategory_th: subcategory.subcategory_th,
+          isActive: subcategory.isActive !== false,
+          isCategoryActive: subcategory.isCategoryActive !== false,
+        }
+        : null,
+      isAvailable: subjectOpen && !capacityExceeded,
+      availability: {
+        subjectOpen,
+        categoryOpen: isCategoryOpen(category),
+        subcategoryOpen: isSubcategoryOpen(subcategory, category),
+        capacityAvailable: !capacityExceeded,
+      },
+    });
     setDrawerVisible(true);
   };
 
   const handleOk = () => {
     const selected = findSubjectByCode(selectedSubject);
-    if (selected) {
-      onSubjectSelected({
-        subject: selected.subject,
-        level: selectedLevel,
-        category: selected.category.category_en,
-        subcategory: selected.subcategory.subcategory_en,
-      });
+    if (!selected) {
+      return false;
     }
-    handleCancel();
+
+    const subjectOpen = isSubjectOpen(
+      selected.subject,
+      selected.category,
+      selected.subcategory
+    );
+    const capacityAvailable = selected.subject.student_max >= numberOfStudents;
+
+    if (!subjectOpen) {
+      message.warning("คอร์สนี้ปิดรับแล้ว");
+      return false;
+    }
+
+    if (!capacityAvailable) {
+      message.warning("จำนวนผู้เรียนเกินกว่าที่คอร์สเปิดรับ");
+      return false;
+    }
+
+    onSubjectSelected({
+      subject: selected.subject,
+      level: selectedLevel,
+      category: selected.category.category_en,
+      subcategory: selected.subcategory.subcategory_en,
+    });
+
+    return true;
   };
 
   return (
@@ -178,8 +319,12 @@ const SubjectSelectionModal = ({
           <Button
             key="ok"
             type="primary"
-            onClick={handleOk}
-            disabled={!selectedSubject}
+            onClick={() => {
+              if (handleOk()) {
+                handleCancel();
+              }
+            }}
+            disabled={!canConfirmSelection}
           >
             ตกลง
           </Button>,
@@ -218,7 +363,10 @@ const SubjectSelectionModal = ({
           >
             {structuredSubjects.map((cat) => (
               <Option key={cat.category_en} value={cat.category_en}>
-                {cat.category_th}
+                <Space size={4}>
+                  <span>{cat.category_th}</span>
+                  {cat.isActive === false && <Tag color="red">ปิดรับ</Tag>}
+                </Space>
               </Option>
             ))}
           </Select>
@@ -231,13 +379,16 @@ const SubjectSelectionModal = ({
             allowClear
             disabled={!selectedCategory}
           >
-            {structuredSubjects
-              .find((cat) => cat.category_en === selectedCategory)
-              ?.subcategories.map((sub) => (
-                <Option key={sub.subcategory_en} value={sub.subcategory_en}>
-                  {sub.subcategory_th}
-                </Option>
-              ))}
+            {selectedCategoryData?.subcategories.map((sub) => (
+              <Option key={sub.subcategory_en} value={sub.subcategory_en}>
+                <Space size={4}>
+                  <span>{sub.subcategory_th}</span>
+                  {!isSubcategoryOpen(sub, selectedCategoryData) && (
+                    <Tag color="red">ปิดรับ</Tag>
+                  )}
+                </Space>
+              </Option>
+            ))}
           </Select>
         </div>
 
@@ -251,134 +402,148 @@ const SubjectSelectionModal = ({
                 paddingRight: 10,
               }}
             >
-              {filteredStructure.map((cat) => (
-                <div key={cat.category_en} style={{ marginBottom: 32 }}>
-                  <div
-                    style={{
-                      background:
-                        "linear-gradient(90deg, #f1f5f9 0%, #ffffff 100%)",
-                      borderLeft: "6px solid #1677ff",
-                      borderRadius: "8px",
-                      padding: "10px 14px",
-                      marginBottom: 16,
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                    }}
-                  >
-                    <Title
-                      level={4}
+              {filteredStructure.map((cat) => {
+                const categoryOpen = isCategoryOpen(cat);
+                return (
+                  <div key={cat.category_en} style={{ marginBottom: 32 }}>
+                    {/* Category Header */}
+                    <div
                       style={{
-                        margin: 0,
-                        color: "#0f172a",
-                        fontWeight: 700,
+                        background: "linear-gradient(90deg, #f1f5f9 0%, #ffffff 100%)",
+                        borderLeft: "6px solid #1677ff",
+                        borderRadius: "8px",
+                        padding: "10px 14px",
+                        marginBottom: 16,
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                        opacity: categoryOpen ? 1 : 0.7,
                       }}
                     >
-                      {cat.category_th}
-                    </Title>
-                  </div>
-
-                  {cat.subcategories.map((sub) => (
-                    <div key={sub.subcategory_en} style={{ marginBottom: 24 }}>
-                      <Text
-                        strong
-                        style={{
-                          display: "block",
-                          color: "#334155",
-                          marginBottom: 10,
-                        }}
-                      >
-                        {sub.subcategory_th}
-                      </Text>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 12,
-                          overflowX: "auto",
-                          paddingBottom: 8,
-                        }}
-                      >
-                        {sub.subjects.map((subject) => {
-                          const disabled =
-                            subject.student_max < numberOfStudents;
-                          const isSelected =
-                            selectedSubject === subject.code;
-
-                          return (
-                            <Card
-                              key={subject.code}
-                              hoverable={!disabled}
-                              onClick={() =>
-                                !disabled && handleSubjectClick(subject)
-                              }
-                              style={{
-                                width: 180,
-                                minWidth: 180,
-                                flex: "0 0 auto",
-                                borderRadius: 12,
-                                border: isSelected
-                                  ? "2px solid #1677ff"
-                                  : "1px solid #e5e7eb",
-                                opacity: disabled ? 0.6 : 1,
-                                cursor: disabled
-                                  ? "not-allowed"
-                                  : "pointer",
-                                transition: "all 0.2s ease",
-                              }}
-                              cover={
-                                <div
-                                  style={{
-                                    width: "100%",
-                                    aspectRatio: "4 / 3",
-                                    background: "#f8fafc",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: 36,
-                                    color: "#94a3b8",
-                                    borderBottom: "1px solid #e2e8f0",
-                                  }}
-                                >
-                                  <AppstoreOutlined />
-                                </div>
-                              }
-                            >
-                              <Card.Meta
-                                title={
-                                  <div
-                                    style={{
-                                      fontWeight: 600,
-                                      fontSize: "0.95rem",
-                                      color: "#1e293b",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {subject.name_th}
-                                  </div>
-                                }
-                                description={
-                                  <div
-                                    style={{
-                                      textAlign: "center",
-                                      marginTop: 6,
-                                    }}
-                                  >
-                                    <Tag color="blue">
-                                      ฿{subject.price || 0}
-                                    </Tag>
-                                    <Tag color="green">
-                                      {subject.student_max} คน
-                                    </Tag>
-                                  </div>
-                                }
-                              />
-                            </Card>
-                          );
-                        })}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Title level={4} style={{ margin: 0, color: "#0f172a", fontWeight: 700 }}>
+                          {cat.category_th}
+                        </Title>
+                        {!categoryOpen && <Tag color="red">ปิดรับ</Tag>}
                       </div>
                     </div>
-                  ))}
-                </div>
-              ))}
+
+                    {/* Subcategories */}
+                    {cat.subcategories.map((sub) => {
+                      const subcategoryOpen = isSubcategoryOpen(sub, cat);
+                      return (
+                        <div key={sub.subcategory_en} style={{ marginBottom: 24 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              color: "#334155",
+                              marginBottom: 10,
+                              opacity: subcategoryOpen ? 1 : 0.7,
+                            }}
+                          >
+                            <Text strong>{sub.subcategory_th}</Text>
+                            {!subcategoryOpen && <Tag color="red">ปิดรับ</Tag>}
+                          </div>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 12,
+                              overflowX: "auto",
+                              paddingBottom: 8,
+                            }}
+                          >
+                            {sub.subjects.map((subject) => {
+                              const categoryOpen = isCategoryOpen(cat);
+                              const subcategoryOpen = isSubcategoryOpen(sub, cat);
+                              const subjectOpen = isSubjectOpen(subject, cat, sub);
+                              const capacityExceeded = subject.student_max < numberOfStudents;
+                              const disabled = !subjectOpen || capacityExceeded;
+                              const isSelected = selectedSubject === subject.code;
+
+                              return (
+                                <Card
+                                  key={subject.code}
+                                  hoverable
+                                  onClick={() => handleSubjectClick(subject, cat, sub)}
+                                  style={{
+                                    width: 180,
+                                    minWidth: 180,
+                                    flex: "0 0 auto",
+                                    borderRadius: 12,
+                                    border: isSelected
+                                      ? "2px solid #1677ff"
+                                      : "1px solid #e5e7eb",
+                                    opacity: disabled ? 0.6 : 1,
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease",
+                                    position: "relative",
+                                  }}
+                                  cover={
+                                    <div
+                                      style={{
+                                        width: "100%",
+                                        aspectRatio: "4 / 3",
+                                        background: "#f8fafc",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: 36,
+                                        color: "#94a3b8",
+                                        borderBottom: "1px solid #e2e8f0",
+                                      }}
+                                    >
+                                      <AppstoreOutlined />
+                                    </div>
+                                  }
+                                >
+                                  <Card.Meta
+                                    title={
+                                      <div
+                                        style={{
+                                          fontWeight: 600,
+                                          fontSize: "0.95rem",
+                                          color: "#1e293b",
+                                          textAlign: "center",
+                                        }}
+                                      >
+                                        {subject.name_th}
+                                      </div>
+                                    }
+                                    description={
+                                      <div style={{ textAlign: "center", marginTop: 6 }}>
+                                        <Space size={4} wrap style={{ justifyContent: "center" }}>
+                                          <Tag color="blue">
+                                            ฿
+                                            {subject.price != null
+                                              ? Number(subject.price).toLocaleString()
+                                              : 0}
+                                          </Tag>
+                                          <Tag color="green">{subject.student_max} คน</Tag>
+                                          {!categoryOpen && <Tag color="red">ปิดรับ (กลุ่มวิชา)</Tag>}
+                                          {categoryOpen && !subcategoryOpen && (
+                                            <Tag color="red">ปิดรับ (หัวข้อย่อย)</Tag>
+                                          )}
+                                          {subcategoryOpen && !subjectOpen && (
+                                            <Tag color="red">ปิดรับ</Tag>
+                                          )}
+                                          {capacityExceeded && (
+                                            <Tag color="orange">เกินโควต้า</Tag>
+                                          )}
+                                        </Space>
+                                      </div>
+                                    }
+                                  />
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <Empty
@@ -387,6 +552,7 @@ const SubjectSelectionModal = ({
             />
           )}
         </Spin>
+
       </Modal>
 
       {/* Slide-in Drawer (Course Detail) */}
@@ -482,9 +648,13 @@ const SubjectSelectionModal = ({
                 ดูรายละเอียดเพิ่มเติม
               </Button>
               <Button
+                disabled={!selectedSubjectDetail.isAvailable}
                 onClick={() => {
-                  setDrawerVisible(false);
-                  handleOk();
+                  const success = handleOk();
+                  if (success) {
+                    setDrawerVisible(false);
+                    handleCancel();
+                  }
                 }}
               >
                 เลือกคอร์สนี้

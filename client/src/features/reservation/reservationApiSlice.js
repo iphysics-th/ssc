@@ -90,7 +90,70 @@ export const reservationApiSlice = apiSlice.injectEndpoints({
         url: `api/subject/${level}/${category}/${subcategory}`,
         method: "GET",
       }),
-      providesTags: ["Subjects"],
+      providesTags: (result = []) => [
+        { type: "Subjects", id: "LIST" },
+        ...result.map((item) => ({ type: "Subjects", id: item.id })),
+      ],
+    }),
+    getSubjectDetail: builder.query({
+      query: (id) => ({
+        url: `api/admin/subjects/${id}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, id) => [{ type: "Subjects", id }],
+    }),
+    createSubject: builder.mutation({
+      query: (data) => ({
+        url: "api/admin/subjects",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: [{ type: "Subjects", id: "LIST" }],
+    }),
+    updateSubject: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `api/admin/subjects/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Subjects", id },
+        { type: "Subjects", id: "LIST" },
+      ],
+    }),
+    updateSubjectStatus: builder.mutation({
+      query: ({ id, isActive }) => ({
+        url: `api/admin/subjects/${id}/status`,
+        method: "PATCH",
+        body: { isActive },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Subjects", id },
+        { type: "Subjects", id: "LIST" },
+      ],
+    }),
+    deleteSubject: builder.mutation({
+      query: (id) => ({
+        url: `api/admin/subjects/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: [{ type: "Subjects", id: "LIST" }],
+    }),
+    updateCategoryStatus: builder.mutation({
+      query: (body) => ({
+        url: "api/admin/categories/status",
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: [{ type: "Subjects", id: "LIST" }],
+    }),
+    updateSubcategoryStatus: builder.mutation({
+      query: (body) => ({
+        url: "api/admin/subcategories/status",
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: [{ type: "Subjects", id: "LIST" }],
     }),
   }),
 });
@@ -114,4 +177,11 @@ export const {
   useLazyGetSubjectsByCategoryQuery,
   useGetSubjectsBySubcategoryQuery,
   useLazyGetSubjectsBySubcategoryQuery,
+  useGetSubjectDetailQuery,
+  useCreateSubjectMutation,
+  useUpdateSubjectMutation,
+  useUpdateSubjectStatusMutation,
+  useDeleteSubjectMutation,
+  useUpdateCategoryStatusMutation,
+  useUpdateSubcategoryStatusMutation,
 } = reservationApiSlice;
