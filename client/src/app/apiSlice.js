@@ -6,7 +6,7 @@ import { userLoggedIn, userLoggedOut } from "../features/auth/authSlice";
 // ---------------------------------------------------------
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.REACT_APP_BACKEND_URL,
-  credentials: "include",
+  credentials: "include", // ✅ needed for cookies
   prepareHeaders: (headers, { getState }) => {
     const token = getState().auth?.user?.token;
     if (token) {
@@ -22,16 +22,15 @@ const baseQuery = fetchBaseQuery({
 const baseQueryWithReauth = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
 
-  // If access token expired or invalid
   if (
     result?.error?.status === 401 &&
     !(args?.skipAuthRefresh || extraOptions?.skipAuthRefresh)
   ) {
     console.warn("🔁 Access token expired — attempting refresh...");
 
-    // Attempt to refresh token
+    // ✅ Try to refresh the token
     const refreshResult = await baseQuery(
-      { url: "api/auth/refreshtoken", method: "GET" },
+      { url: "/api/auth/refreshtoken", method: "GET" },
       api,
       { ...extraOptions, skipAuthRefresh: true }
     );
@@ -41,18 +40,18 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
       const newAccessToken = refreshResult.data.accessToken;
 
       if (refreshedUser && newAccessToken) {
-        // ✅ Correctly flatten and update Redux state
         api.dispatch(
           userLoggedIn({
             ...refreshedUser,
             token: newAccessToken,
           })
         );
+        console.log("✅ Token refreshed successfully");
       } else {
         console.warn("⚠️ Refresh succeeded but missing user or token field");
       }
 
-      // Retry original request with new token
+      // Retry original request
       result = await baseQuery(args, api, extraOptions);
     } else {
       console.error("❌ Refresh token invalid — logging out");
@@ -87,7 +86,7 @@ export const apiSlice = createApi({
 // ---------------------------------------------------------
 export const setupPeriodicTokenRefresh = (
   dispatch,
-  intervalMs = 15 * 60 * 1000 // default 15 minutes
+  intervalMs = 4 * 60 * 1000 // ✅ refresh every 4 minutes (safer than 15)
 ) => {
   setInterval(async () => {
     try {
@@ -95,13 +94,12 @@ export const setupPeriodicTokenRefresh = (
         `${process.env.REACT_APP_BACKEND_URL}/api/auth/refreshtoken`,
         {
           method: "GET",
-          credentials: "include",
+          credentials: "include", // ✅ ensure cookies are sent
         }
       );
 
       const data = await response.json();
 
-      // ✅ Correctly handle structure from backend
       if (response.ok && data?.user && data?.accessToken) {
         dispatch(
           userLoggedIn({
@@ -109,9 +107,9 @@ export const setupPeriodicTokenRefresh = (
             token: data.accessToken,
           })
         );
-        console.log("🔄 Token refreshed successfully:", data.user.username);
+        console.log("🔄 Token refreshed periodically for:", data.user.username);
       } else {
-        console.warn("⚠️ Token refresh failed — logging out");
+        console.warn("⚠️ Periodic token refresh failed — logging out");
         dispatch(userLoggedOut());
       }
     } catch (err) {

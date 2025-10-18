@@ -11,6 +11,12 @@ const mongoose = require('mongoose');
 mongoose.set('strictQuery', true); // or false, depending on your preference
 
 const app = express();
+
+// If behind a proxy in production (nginx), trust it (secure cookies, proto)
+if ((process.env.NODE_ENV || 'development') === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use(cookieParser());
 
 const corsOptions = {
@@ -69,10 +75,7 @@ require("./app/routes/reservation.routes")(app);
 require("./app/routes/subject.routes")(app);
 require("./app/routes/admin.routes")(app);
 
-// If behind a proxy in production (nginx), trust it (secure cookies, proto)
-if ((process.env.NODE_ENV || 'development') === 'production') {
-  app.set('trust proxy', 1);
-}
+
 
 // ---- Start server (HTTPS in prod if USE_HTTPS=true; HTTP otherwise) ----
 const PORT = Number(process.env.PORT) || (String(process.env.USE_HTTPS || 'true').toLowerCase() === 'true' ? 5000 : 5050);
@@ -96,7 +99,7 @@ if (USE_HTTPS) {
     }
     https.createServer(credentials, app).listen(PORT, () => {
       console.log(`HTTPS Server running on port ${PORT}`);
-    });
+    }).timeout = 10 * 60 * 1000; // 10 minutes
   } catch (e) {
     console.error('Failed to start HTTPS. Falling back to HTTP.', e.message);
     http.createServer(app).listen(PORT, () => {
