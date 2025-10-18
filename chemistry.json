@@ -1,0 +1,506 @@
+[
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "อุปกรณ์พื้นฐานและการกลั่นลำดับส่วน",
+    "code": "chem1201",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เทคนิคการใช้อุปกรณ์พื้นฐานทางเคมี เทคนิคการกลั่นแบบลำดับส่วน โดยใช้ชุดกลั่นลำดับส่วน"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การเตรียมสารละลาย",
+    "code": "chem1202",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "ฝึกปฏิบัติการเตรียมสารละลายจากสารบริสุทธิ์และการเตรียมในหน่วยความเข้มข้นต่างๆ สารละลายโดยการเจือจางจากสารละลายที่มีอยู่ ซึ่งเป็นการฝึกการเลือกใช้เครื่องมือและอุปกรณ์ที่เหมาะสม"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "กรดเบสและอินดิเคเตอร์",
+    "code": "chem1203",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "ศึกษาคุณสมบัติของกรด-เบส การทดสอบตัวอย่างเพื่อทราบถึง\nคุณสมบัติว่าเป็นกรด เบส หรือกลาง โดยใช้เทคนิคการทดสอบด้วย\nกระดาษลิตมัส กระดาษยูนิเวอร์แซล สารละลายอินดิเคเตอร์\nสารละลายอินดิเคเตอร์จากธรรมชาติ และใช้เครื่องวัดค่าความเป็น\nกรดด่างของสารละลาย (pH meter)"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "อุปกรณ์พื้นฐานและการแยกสารใน\nชีวิตประจำวัน",
+    "code": "chem1204",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เทคนิคการใช้อุปกรณ์พื้นฐานทางเคมี เทคนิคการแยกสารเนื้อผสม\nและสารเนื้อเดียว"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การทดสอบสารอาหารใน\nชีวิตประจำวัน",
+    "code": "chem1205",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "ทดลองเกี่ยวกับคุณสมบัติการของสารอาหาร เช่นสารอาหารประเภท\nคาร์โบไฮเดรต โดยดูคุณสมบัติน้ำตาลรีดิวซ์ โดยใช้ Benedict'sTest,\nMolisch's Test และ สารอาหารประเภทโปรตีน สมบัติทางกายภาพ\nโดยใช้ความร้อนและกรด และทดลองคุณสมบัติทาง เคมีโดยใช้\nNinhydrin test และ Biuret test"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "โครมาโทรกราฟี ",
+    "code": "chem1206",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เทคนิคโครมาโทรกราฟีแบบกระดาษ ทดสอบไอออนของธาตุโดย\nเทคนิคโครมาโทรกราฟี"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การกลั่นด้วยไอน้ำ  ",
+    "code": "chem1209",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "รู้จักหลักการ เครื่องมือ อุปกรณ์ ที่ใช้สำหรับการแยกสาร โดย\nวิธีการกลั่นด้วยไอน้ำ ทั้งยังเพิ่มทักษะในการสังเกตลักษณะทาง\nกายภาพ และปฏิบัติจริงในการกลั่นน้ำมันหอมระเหยจากพืชด้วย\nวิธีการกลั่นด้วยไอน้ำ"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "เทคนิคการสกัด",
+    "code": "chem1210",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "รู้จักหลักการของการแยกสารโดยวิธีการสกัดสาร ทั้งยังทราบถึง\nอุปกรณ์ เทคนิคในการสกัดสารโดยการปฏิบัติจริง"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การตกผลึกสาร ",
+    "code": "chem1211",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้กระบวนการทำให้สารบริสุทธิ์โดยฝึกทักษะการตกผลึกของสาร\nซึ่งในการทดลองจะได้ การเตรียมและใช้อุปกรณ์ในการตกผลึก ฝึก\nทักษะการกรองแบบธรรมดาและการกรองภายใต้ความดัน"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การแยกสารผสม ",
+    "code": "chem1208",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้เทคนิคต่างๆของการแยกสารออกจากของผสมโดยอาศัยสมบัติ\nทางกายภาพ เรียนรู้และฝึกทักษะการกรอง การตกผลึก การเลือกตัว\nทำละลายที่เหมาะสม ฝึกทักษะการกรองแบบธรรมดาและการกรอง\nภายใต้ความดัน"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การชุบโลหะด้วยไฟฟ้า ",
+    "code": "chem1212",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้ปฏิบัติรีดอกซ์ เพื่อประยุกต์ใช้ในการชุบโลหะด้วยไฟฟ้า"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การทำสบู่สมุนไพร ",
+    "code": "chem1213",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้ปฏิกิริยาของการเกิดสบู่ และฝึกทักษะการใช้เครื่องมือ อุปกรณ์\nในการทำสบู่จากวัตถุดิบธรรมชาติ เช่น น้ำผึ้ง ว่านหางจระเข้ ฯ"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "สเตรียรอยด์ในเครื่องสำอางและยา ",
+    "code": "chem1214",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เป็นการน ายาสมุนไพร (ยาลูกกลอน) มาสกัดเพื่อหาสเตรียรอยด์ที่อยู่\nในยาสมุนไพรนั้น โดยใช้เทคนิค Thin layer chromatography\n*** สามารถนำตัวอย่างมาทดสอบได้ ***"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "STEM : แยกสี แยกสารธรรมชาติ ",
+    "code": "chem1215",
+    "slot": 1,
+    "level_th": "มัธยมต้น",
+    "level_en": "medium",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้หลักการสกัดสารจากใบไม้ โดยใช้ paper chromatography\nและใช้รูปแบบการเรียนการสอนแบบ STEM ศึกษา"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "อุปกรณ์และเครื่องมือพื้นฐานและการแยกสารผสม",
+    "code": "chem1314",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เทคนิคการใช้อุปกรณ์และเครื่องมือพื้นฐาน เทคนิคการแยกสารผสม\nโดยใช้กรวยแยก"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การตกผลึกและการหาจุดหลอมเหลว",
+    "code": "chem1301",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้และรู้จักวิธีในการทำให้สารบริสุทธิ์ และได้ฝึกทักษะการแยก\nสารให้บริสุทธิ์โดยการตกผลึก ซึ่งในการทดลองจะได้ การเตรียมและ\nใช้อุปกรณ์ใน การตกผลึก การเลือกตัวทำละลายที่เหมาะสมสำหรับ\nการตกผลึก ฝึกทักษะ และหาจุดหลอมเหลวเพื่อหาความบริสุทธิ์ของ\nสารเบื้องต้น"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "เทคนิคการสกัดสาร ",
+    "code": "chem1302",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เทคนิคการสกัด ศึกษาการแยกสารผสมโดยวิธีการต่าง ๆ เช่นการสกัด"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "โครมาโทรกราฟีแบบเยื่อบางและ\nคอลัมน์ (สกัดแยกใบบัวบก)",
+    "code": "chem1303",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "การศึกษาการองค์ประกอบทางเคมีของใบบัวบก โดยวิธีการสกัด\nเบื้องต้นและแยกสารจากใบบัวบก โดยวิธี TLC แบบเยื่อบาง และ\nคอลัมน์โครมาโทกราฟี"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "อุปกรณ์พื้นฐานและการกลั่น ",
+    "code": "chem1304",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้เทคนิคการใช้อุปกรณ์พื้นฐานทางเคมี\nและเทคนิคการกลั่นแบบธรรมดา การกลั่นแบบลำดับส่วน และการ\nกลั่นด้วยไอน้ำ"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การหาองค์ประกอบของสารประกอบไอออนิค",
+    "code": "chem1305",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้วิธีการตรวจหาไอออนบวก ไอออนลบ ในสารประกอบชนิดต่าง\nๆ และศึกษาการทดสอบสีของเปลวไฟของสารประกอบไอออนิค"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "อุปกรณ์และเครื่องมือพื้นฐานและการเตรียมสารละลาย",
+    "code": "chem1307",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้การการเตรียมสารละลายสำหรับใช้ในห้องปฏิบัติการจากหน่วย\nความเข้มข้นต่าง ๆ วิธีการคำนวณน้ำหนักของตัวถูกละลายและ\nปริมาตรสารละลายที่ต้องการเตรียม และฝึกปฏิบัติการเตรียม\nสารละลายจากสารบริสุทธิ์และการเตรียมสารละลายโดยการเจือจาง"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การใช้เครื่องมือพื้นฐานและเทคนิคการไทเทรต กรด-เบส",
+    "code": "chem1308",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้เทคนิคต่าง ๆ ของการใช้อุปกรณ์พื้นฐานได้อย่างถูกวิธี เช่น\nรู้จักอุปกรณ์เครื่องแก้วที่ใช้สำหรับการไตเตรท ทำการทดลองการไตเต\nรทเพื่อหาความเข้มข้นของสารละลายมาตรฐานทุติยภูมิ และไตเตรท\nหาความเข้มข้นของสารละลายกรดแก่และกรดอ่อนตัวอย่างได้"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "ทดสอบน้ำตาลด้วยเทคนิคโครมาโทกราฟี",
+    "code": "chem1309",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เทคนิคโครมาโทรกราฟีแบบกระดาษและทดสอบชนิดของน้ำตาลใน\nตัวอย่างอาหาร"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "ทคนิคการไทเทรตหาปริมาณ\nวิตามินซี",
+    "code": "chem1314",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เทคนิคการไทเทรตการหาปริมาณวิตามินซี จากตัวอย่างที่มีใน\nชีวิตประจำวัน"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การวิเคราะหาปริมาณกรดอะซิติกในน้ำส้มสายชู",
+    "code": "chem1315",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "ใช้เทคนิคการไทเตรทเพื่อหาปริมาณของกรดอะซิติกในน้ำส้มสายชู\nและเรียนรู้วิธีการคำนวณหาปริมาณของกรดอะซีติกในตัวอย่าง\nน้ำส้มสายชู"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การหาปริมาณไฮโปคลอไรด์\nในน้ำยาซักผ้าขาว",
+    "code": "chem1316",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้และศึกษาปฏิกิริยารีดอกซ์ที่เกี่ยวข้องกับไอโอดีน ทั้งยัง\nประยุกต์การ ไทเทรตแบบไอโอโดเมทรีในการวิเคราะห์ไฮโปคลอไรต์\nในน้ำยาซักผ้าขาว"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การกลั่นด้วยไอน้ำและการสกัดน้ำมันหอมระเหย",
+    "code": "chem1317",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้และทราบถึงหลักการ เครื่องมือ อุปกรณ์ และเทคนิคต่าง ๆ\nและ ข้อจำกัดของการแยกสาร โดยวิธีการกลั่นด้วยไอน้ำและเทคนิค\nการสกัดสาร เช่น การสกัดน้ำมันหอมระเหยจากพืชสมุนไพร"
+    ],
+    "student_max": 25
+  },
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "การหาค่าปริมาณออกซิเจนในน้ำ (Dissolved Oxygen : DO)",
+    "code": "chem1318",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "เคมี",
+    "category_en": "Chemistry",
+    "subcategory_th": "เคมีทั่วไป",
+    "subcategory_en": "General Chemistry",
+    "description_th": [
+      "เรียนรู้ถึงตัวชีวัดคุณภาพของน้ำ และการปนเปื้อนของสารมลพิษในน้ำ\nซึ่งมีตัวบ่งชี้ของระดับการปนเปื้อน เช่นค่า DO (Dissolved Oxygen)\nรู้ถึงวิธีการเก็บน้ำตัวอย่างจากแหล่งน้ำเพื่อมาหาค่าปริมาณออกซิเจน\nที่ละลายอยู่ในน้ำ"
+    ],
+    "student_max": 25
+  }
+]
