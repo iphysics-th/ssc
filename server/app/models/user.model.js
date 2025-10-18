@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const { getNumberEnv } = require("../utils/env");
 
 const userSchema = new mongoose.Schema({
   username: String,
@@ -27,19 +28,15 @@ const userSchema = new mongoose.Schema({
   }
 });
 
-// Helper to parse expiration time in seconds to a format that jwt.sign expects
-function parseExpirationTime(expTime) {
-  // JWT expects a numeric value in seconds or a string describing a time span zeit/ms.
-  // Since your .env values are in seconds, we directly use them.
-  return `${expTime}s`; // Append 's' to indicate seconds to be compatible with zeit/ms format used by jwt.sign
-}
+const ACCESS_TOKEN_EXPIRE_SECONDS = getNumberEnv("ACCESS_TOKEN_EXPIRE", 3600);
+const REFRESH_TOKEN_EXPIRE_SECONDS = getNumberEnv("REFRESH_TOKEN_EXPIRE", 2592000);
 
 // Sign access token
 userSchema.methods.signAccessToken = function () {
   // Extract roles names from the user's roles
   const roles = this.roles.map(role => role.name);
 
-  const accessTokenExpireTime = parseExpirationTime(process.env.ACCESS_TOKEN_EXPIRE || "3600"); // Defaults to 3600 seconds if not specified
+  const accessTokenExpireTime = `${ACCESS_TOKEN_EXPIRE_SECONDS}s`; // Defaults handled in helper
 
   // Include user ID and roles in the JWT payload
   const payload = {
@@ -54,7 +51,7 @@ userSchema.methods.signAccessToken = function () {
 
 // Sign refresh token
 userSchema.methods.signRefreshToken = function () {
-  const refreshTokenExpireTime = parseExpirationTime(process.env.REFRESH_TOKEN_EXPIRE || "2592000"); // Defaults to 2592000 seconds if not specified
+  const refreshTokenExpireTime = `${REFRESH_TOKEN_EXPIRE_SECONDS}s`; // Defaults handled in helper
   return jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET || "default_refresh_secret_key", {
     expiresIn: refreshTokenExpireTime,
   });

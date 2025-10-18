@@ -1,11 +1,15 @@
 const config = require("../config/auth.config");
 const db = require("../models");
 require("dotenv").config();
+const { getNumberEnv } = require("../utils/env");
 const User = db.user;
 const Role = db.role;
 const { OAuth2Client } = require("google-auth-library");
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
+
+const ACCESS_TOKEN_EXPIRE_SECONDS = getNumberEnv("ACCESS_TOKEN_EXPIRE", 300);
+const REFRESH_TOKEN_EXPIRE_SECONDS = getNumberEnv("REFRESH_TOKEN_EXPIRE", 604800);
 
 // ======================================================
 // 🔹 Helper: Unified Cookie Setter
@@ -19,10 +23,8 @@ function setAuthCookies(res, accessToken, refreshToken) {
   };
 
   // Explicit expiry times (default fallback)
-  const accessTokenExpire =
-    (Number(process.env.ACCESS_TOKEN_EXPIRE) || 300) * 1000; // 5 min
-  const refreshTokenExpire =
-    (Number(process.env.REFRESH_TOKEN_EXPIRE) || 604800) * 1000; // 7 days
+  const accessTokenExpire = ACCESS_TOKEN_EXPIRE_SECONDS * 1000;
+  const refreshTokenExpire = REFRESH_TOKEN_EXPIRE_SECONDS * 1000;
 
   res.cookie("accessToken", accessToken, {
     ...cookieOptions,
@@ -190,13 +192,13 @@ exports.refreshToken = async (req, res) => {
       const newAccessToken = jwt.sign(
         { id: userId, username: user.username, roles },
         process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: process.env.ACCESS_TOKEN_EXPIRE || "300s" }
+        { expiresIn: `${ACCESS_TOKEN_EXPIRE_SECONDS}s` }
       );
 
       const newRefreshToken = jwt.sign(
         { id: userId },
         process.env.REFRESH_TOKEN_SECRET,
-        { expiresIn: process.env.REFRESH_TOKEN_EXPIRE || "7d" }
+        { expiresIn: `${REFRESH_TOKEN_EXPIRE_SECONDS}s` }
       );
 
       setAuthCookies(res, newAccessToken, newRefreshToken);
