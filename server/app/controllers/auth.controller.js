@@ -87,15 +87,22 @@ exports.signin = (req, res) => {
       const refreshToken = user.signRefreshToken(); // Ensure this method exists in your User model
 
       // Convert environment variable values to numbers for cookie maxAge
-      const accessTokenExpire = Number(process.env.ACCESS_TOKEN_EXPIRE) * 1000; // Convert seconds to milliseconds
-      const refreshTokenExpire = Number(process.env.REFRESH_TOKEN_EXPIRE) * 1000; // Convert seconds to milliseconds
+      const accessTokenExpire = (Number(process.env.ACCESS_TOKEN_EXPIRE) || 300) * 1000; // default 5min
+      const refreshTokenExpire = (Number(process.env.REFRESH_TOKEN_EXPIRE) || 604800) * 1000; // default 7 days
+
+      const isProd = process.env.NODE_ENV === "production";
+      const cookieOptions = {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? "None" : "Lax",
+      };
 
       // Log the login event
       console.log(`Login successful for user: ${user.username} at ${new Date().toISOString()}`);
 
       // Set cookies for tokens
-      res.cookie('accessToken', token, { httpOnly: true, maxAge: accessTokenExpire }); // Use environment variable
-      res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: refreshTokenExpire }); // Use environment variable
+      res.cookie("accessToken", token, { ...cookieOptions, maxAge: accessTokenExpire });
+      res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: refreshTokenExpire });
 
       var authorities = [];
       for (let i = 0; i < user.roles.length; i++) {
