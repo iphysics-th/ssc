@@ -1,0 +1,189 @@
+/* ========================================================= */
+/* BASE STYLES                                               */
+/* ========================================================= */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  box-shadow: 0 4px 5px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  padding: 0 24px;
+  min-height: 90px;
+}
+
+.logo {
+  height: 70px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logo-container-desktop {
+  display: flex;
+  align-items: center;
+}
+
+.menu-desktop {
+  display: flex;
+  justify-content: flex-end;
+  flex-grow: 1;
+}
+
+.menu-mobile,
+.logo-container-mobile {
+  display: none;
+}
+
+.header-user-button {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 500;
+  color: #333;
+}
+.header-user-button:hover {
+  color: #1890ff;
+}
+
+/* ========================================================= */
+/* 1️⃣ DESKTOP (≥992px)                                      */
+/* ========================================================= */
+
+@media (min-width: 992px) {
+  .logo-container-desktop {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .desktop-user-column {
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center;
+  }
+
+  .desktop-user-wrapper {
+    margin-left: auto;
+  }
+
+  .menu-desktop {
+    justify-content: center;
+  }
+}
+
+/* ========================================================= */
+/* 2️⃣ IPAD (768px–991px)                                    */
+/* ========================================================= */
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .app-header {
+    padding: 0 20px;
+    min-height: 80px;
+  }
+
+  .logo-container-desktop,
+  .menu-desktop {
+    display: none !important;
+  }
+
+  .logo-container-mobile {
+    display: flex !important;
+    justify-content: center;
+    align-items: flex-end;
+    width: 100%;
+  }
+
+  .logo {
+    height: 60px;
+    max-width: 160px;
+  }
+
+  .menu-mobile {
+    display: inline-flex !important;
+  }
+
+  .mobile-user-column {
+    display: flex !important;
+    justify-content: flex-end !important;
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+    /* 👇 Lower the logo slightly only on iPad */
+  .logo-container-mobile {
+    transform: translateY(15px);
+  }
+
+}
+
+/* ========================================================= */
+/* 3️⃣ IPHONE (≤767px)                                       */
+/* ========================================================= */
+
+@media (max-width: 767px) {
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    min-height: 72px;
+  }
+
+  .logo-container-desktop,
+  .menu-desktop {
+    display: none !important;
+  }
+
+  .mobile-menu-column,
+  .mobile-logo-column,
+  .mobile-user-column {
+    display: flex;
+    align-items: center;
+  }
+
+  .mobile-menu-column {
+    justify-content: flex-start;
+  }
+
+  .mobile-logo-column {
+    justify-content: center;
+  }
+
+  .mobile-user-column {
+    justify-content: flex-end;
+  }
+
+  .logo-container-mobile {
+    display: flex;
+    justify-content: center;
+    transform: translateY(8px);
+  }
+
+  .logo {
+    height: 48px;
+    max-width: 130px;
+  }
+
+  .menu-mobile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    height: 40px;
+    border-radius: 999px;
+  }
+
+  .header-user-button {
+    padding: 0 10px;
+    height: 40px;
+    font-size: 12px;
+  }
+
+  .header-username {
+    display: none;
+  }
+}
