@@ -1,14 +1,15 @@
-import React, { useEffect, useRef, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { FaArrowLeft, FaArrowRight } from "react-icons/fa"
-import "../../../css/Reservation/ReservationProgress.css"
+import React, { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FaArrowLeft, FaArrowRight, FaCheckCircle } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import "../../../css/Reservation/ReservationProgress.css";
 
-import ReservationSetup from "../../../components/Reservation/ReservationSetup"
-import SelectDate from "../pages/SelectDate"
-import SelectSubjects from "../pages/SelectSubjects"
-import UserInfo from "../pages/UserInfo"
-import ReviewSummary from "../pages/ReviewSummary"
-import Success from "../pages/Success"
+import ReservationSetup from "../../../components/Reservation/ReservationSetup";
+import SelectDate from "../pages/SelectDate";
+import SelectSubjects from "../pages/SelectSubjects";
+import UserInfo from "../pages/UserInfo";
+import ReviewSummary from "../pages/ReviewSummary";
+import Success from "../pages/Success";
 
 const steps = [
   { title: "รายละเอียดอบรม", Component: ReservationSetup },
@@ -17,64 +18,70 @@ const steps = [
   { title: "ข้อมูลผู้จอง", Component: UserInfo },
   { title: "ตรวจสอบข้อมูล", Component: ReviewSummary },
   { title: "เสร็จสิ้น", Component: Success },
-]
+];
 
-const clampStep = (value) => Math.min(Math.max(value, 0), steps.length - 1)
+const clampStep = (value) => Math.min(Math.max(value, 0), steps.length - 1);
 
 export default function ReservationProgress({ initialStep = 0 }) {
-  const [currentStep, setCurrentStep] = useState(clampStep(initialStep))
-  const [direction, setDirection] = useState(0)
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const stepRefs = useRef(steps.map(() => React.createRef()))
+  const [currentStep, setCurrentStep] = useState(clampStep(initialStep));
+  const [direction, setDirection] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const stepRefs = useRef(steps.map(() => React.createRef()));
+  const navigate = useNavigate();
 
   useEffect(() => {
-    setCurrentStep(clampStep(initialStep))
-    setDirection(0)
-  }, [initialStep])
+    setCurrentStep(clampStep(initialStep));
+    setDirection(0);
+  }, [initialStep]);
 
   const goToStep = (target) => {
-    const nextIndex = clampStep(target)
-    if (nextIndex === currentStep) return
-    setDirection(nextIndex > currentStep ? 1 : -1)
-    setCurrentStep(nextIndex)
-  }
+    const nextIndex = clampStep(target);
+    if (nextIndex === currentStep) return;
+    setDirection(nextIndex > currentStep ? 1 : -1);
+    setCurrentStep(nextIndex);
+  };
 
   const invokeNext = async () => {
-    if (isTransitioning || currentStep >= steps.length - 1) return
-    setIsTransitioning(true)
+    if (isTransitioning || currentStep >= steps.length - 1) return;
+    setIsTransitioning(true);
     try {
-      const ref = stepRefs.current[currentStep]?.current
+      const ref = stepRefs.current[currentStep]?.current;
       if (ref?.next) {
-        await ref.next()
+        await ref.next();
       } else {
-        goToStep(currentStep + 1)
+        goToStep(currentStep + 1);
       }
     } finally {
-      setIsTransitioning(false)
+      setIsTransitioning(false);
     }
-  }
+  };
 
   const invokePrev = async () => {
-    if (isTransitioning || currentStep === 0) return
-    setIsTransitioning(true)
+    if (isTransitioning || currentStep === 0) return;
+    setIsTransitioning(true);
     try {
-      const ref = stepRefs.current[currentStep]?.current
+      const ref = stepRefs.current[currentStep]?.current;
       if (ref?.prev) {
-        await ref.prev()
+        await ref.prev();
       } else {
-        goToStep(currentStep - 1)
+        goToStep(currentStep - 1);
       }
     } finally {
-      setIsTransitioning(false)
+      setIsTransitioning(false);
     }
-  }
+  };
 
-  const progressPercent = ((currentStep + 1) / steps.length) * 100
-  const StepComponent = steps[currentStep].Component
-  const activeRef = stepRefs.current[currentStep]
+  const progressPercent = ((currentStep + 1) / steps.length) * 100;
+  const StepComponent = steps[currentStep].Component;
+  const activeRef = stepRefs.current[currentStep];
+
+  // Flags for specific steps
+  const isReviewStep = currentStep === steps.length - 2; // ตรวจสอบข้อมูล
+  const isSuccessStep = currentStep === steps.length - 1; // เสร็จสิ้น
 
   return (
     <div className="reservation-wrapper">
+      {/* ============================= Progress Bar ============================= */}
       <div className="progress-bar-container">
         <div className="progress-label">
           ขั้นตอน {currentStep + 1} / {steps.length} — {steps[currentStep].title}
@@ -87,6 +94,7 @@ export default function ReservationProgress({ initialStep = 0 }) {
         </div>
       </div>
 
+      {/* ============================= Step Content ============================= */}
       <div className="card-stack-container">
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
@@ -109,24 +117,47 @@ export default function ReservationProgress({ initialStep = 0 }) {
         </AnimatePresence>
       </div>
 
+      {/* ============================= Navigation Buttons ============================= */}
       <div className="card-nav-buttons">
-        <button
-          className="nav-btn prev"
-          onClick={invokePrev}
-          disabled={currentStep === 0 || isTransitioning}
-        >
-          <FaArrowLeft /> ย้อนกลับ
-        </button>
-        <button
-          className="nav-btn next"
-          onClick={invokeNext}
-          disabled={currentStep === steps.length - 1 || isTransitioning}
-        >
-          ถัดไป <FaArrowRight />
-        </button>
+        {/* Hide "ย้อนกลับ" on the Success page */}
+        {!isSuccessStep && (
+          <button
+            className="nav-btn prev"
+            onClick={invokePrev}
+            disabled={currentStep === 0 || isTransitioning}
+          >
+            <FaArrowLeft /> ย้อนกลับ
+          </button>
+        )}
+
+        {/* Next Button (Normal / Green / Blue Final) */}
+        {!isSuccessStep ? (
+          <button
+            className={`nav-btn next ${isReviewStep ? "green-gradient" : ""}`}
+            onClick={invokeNext}
+            disabled={isTransitioning}
+          >
+            {isReviewStep ? (
+              <>
+                <FaCheckCircle style={{ marginRight: 6 }} /> ยืนยัน
+              </>
+            ) : (
+              <>
+                ถัดไป <FaArrowRight />
+              </>
+            )}
+          </button>
+        ) : (
+          <button
+            className="nav-btn next blue-gradient"
+            onClick={() => navigate("/dashboard")}
+          >
+            เสร็จสิ้น
+          </button>
+        )}
       </div>
     </div>
-  )
+  );
 }
 
 const cardVariants = {
@@ -155,4 +186,4 @@ const cardVariants = {
     scale: 0.96,
     filter: "blur(6px)",
   }),
-}
+};

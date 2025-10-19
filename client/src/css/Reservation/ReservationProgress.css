@@ -183,3 +183,34 @@
     font-size: 0.9rem;
   }
 }
+
+/* ========================================================= */
+/* Gradient Button Overrides (must be LAST in file)           */
+/* ========================================================= */
+
+/* Green Gradient for “ดำเนินการจอง” */
+button.nav-btn.next.green-gradient {
+  background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 15px 35px -18px rgba(22, 163, 74, 0.55) !important;
+  transition: all 0.25s ease-in-out !important;
+}
+
+button.nav-btn.next.green-gradient:hover {
+  background: linear-gradient(90deg, #16a34a 0%, #15803d 100%) !important;
+  transform: translateY(-2px);
+}
+
+/* Blue Gradient for “เสร็จสิ้น” */
+button.nav-btn.next.blue-gradient {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 15px 35px -18px rgba(37, 99, 235, 0.55) !important;
+}
+
+button.nav-btn.next.blue-gradient:hover {
+  background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%) !important;
+  transform: translateY(-2px);
+}
