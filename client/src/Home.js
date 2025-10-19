@@ -10,15 +10,17 @@ const Home = () => {
       <Slideshow />
 
       <IntroComponent 
-        preIntro="เกี่ยวกับเรา"
-        mainIntro="Who is 'SSC'"
-      />
-      <AboutUs />
-      <IntroComponent 
         preIntro="Our services"
         mainIntro="บริการของเรา"
       />
       <ServicesHome />
+
+      <IntroComponent 
+        preIntro="เกี่ยวกับเรา"
+        mainIntro="Who is 'SSC'"
+      />
+      <AboutUs />
+      
       <IntroComponent 
         preIntro="What's new"
         mainIntro="ข่าวสารอัพเดท"

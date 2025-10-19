@@ -5,8 +5,8 @@ import '../../css/Home/ServicesHome.css';
 const ServicesHome = () => {
   const navigate = useNavigate();
   const services = [
-    { img: '/services/stem-ssc.png', text: 'จองอบรมวิทยาศาสตร์<br />สำหรับนักเรียน <br /><br /> (STEM-SSC)', link: '/time' },
-    { img: '/services/scicamp-ssc.png', text: 'จองค่ายวิทยาศาสตร์ <br /><br />(SCICAMP-SSC)', link: '/time' },
+    { img: '/services/stem-ssc.png', text: 'จองอบรมวิทยาศาสตร์<br />สำหรับนักเรียน <br /><br /> (STEM-SSC)', link: '/reservation' },
+    { img: '/services/scicamp-ssc.png', text: 'จองค่ายวิทยาศาสตร์ <br /><br />(SCICAMP-SSC)', link: '/reservation' },
     { img: '/services/sciterest-ssc.png', text: 'ตรวจสอบสถานะการจอง <br /><br />(ใช้หมายเลขการจอง 9 หลัก)', link: '/reservecheck' },
     {
       img: '/services/hand-to-sci-2.jpg',

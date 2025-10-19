@@ -54,6 +54,9 @@ exports.checkReservation = async (req, res) => {
 
 const ensureClassSubjectsShape = async (reservationDoc) => {
   const reservation = reservationDoc.toObject();
+  reservation.studentsPerClass = Array.isArray(reservation.studentsPerClass)
+    ? reservation.studentsPerClass
+    : [];
 
   if (Array.isArray(reservation.slotSelections)) {
     for (const slot of reservation.slotSelections) {

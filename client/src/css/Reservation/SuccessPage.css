@@ -1,0 +1,146 @@
+/* =========================================================
+   🎉 Reservation Success Page Styling (Centered Layout)
+   Designed for soft, modern aesthetics (Thai-friendly)
+   ========================================================= */
+
+.success-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #f0f9ff, #ffffff);
+  padding: 40px 20px;
+  font-family: "Sarabun", "Prompt", "Noto Sans Thai", sans-serif;
+}
+
+/* Centered Card Container */
+.success-card {
+  max-width: 600px;
+  width: 100%;
+  height: 500px; /* give the card a fixed height for vertical centering */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* ⬅ centers the icon + title vertically */
+  align-items: center;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 40px 32px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  animation: fadeInUp 0.8s ease;
+}
+
+/* Success icon and text */
+.success-icon {
+  font-size: 90px;
+  color: #52c41a;
+  margin-bottom: 16px;
+  animation: popIn 0.6s ease;
+}
+
+.success-title {
+  color: #1677ff;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.success-text {
+  color: #475569;
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+
+/* Description paragraph */
+.success-description {
+  margin-top: 20px;
+  color: #334155;
+  line-height: 1.8;
+}
+
+/* Buttons layout */
+.success-actions {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.success-button-primary {
+  font-weight: 600;
+  background: linear-gradient(90deg, #1677ff, #4096ff);
+  border: none;
+  color: #fff;
+  border-radius: 25px;
+  padding: 10px 20px;
+  transition: all 0.2s ease;
+}
+
+.success-button-primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-2px);
+}
+
+.success-button-secondary {
+  font-weight: 500;
+  background: #f3f4f6;
+  color: #334155;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 20px;
+  transition: all 0.2s ease;
+}
+
+.success-button-secondary:hover {
+  background: #e5e7eb;
+  transform: translateY(-2px);
+}
+
+/* Footer note */
+.success-footer {
+  margin-top: 40px;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+  80% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Mobile optimization */
+@media (max-width: 480px) {
+  .success-card {
+    height: auto;
+    padding: 32px 20px;
+  }
+
+  .success-title {
+    font-size: 1.5rem;
+  }
+
+  .success-text {
+    font-size: 0.95rem;
+  }
+}

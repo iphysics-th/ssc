@@ -116,6 +116,16 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
   const [activeClassIndex, setActiveClassIndex] = useState(null);
   const [activeSlotIndex, setActiveSlotIndex] = useState(null);
 
+  const studentsPerClass = useMemo(() => {
+    const saved = Array.isArray(formData.studentsPerClass)
+      ? formData.studentsPerClass
+      : [];
+    return Array.from({ length: numberOfClasses }, (_, idx) => {
+      const value = Number(saved[idx]);
+      return Number.isFinite(value) && value > 0 ? Math.round(value) : 1;
+    });
+  }, [formData.studentsPerClass, numberOfClasses]);
+
   useEffect(() => {
     setClassSubjects((prev) =>
       Array.from({ length: numberOfClasses }, (_, index) => {
@@ -143,29 +153,38 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
   };
 
   const handleSubjectSelected = (selection) => {
-    if (activeClassIndex === null || activeSlotIndex === null) return;
+  if (activeClassIndex === null || activeSlotIndex === null) return;
 
-    setClassSubjects((prev) => {
-      const next = [...prev];
-      const currentEntry = next[activeClassIndex] || normaliseClassEntry(null, activeClassIndex);
-      const slots = Array.isArray(currentEntry.slots)
-        ? [...currentEntry.slots]
-        : slotDefinitions.map((definition) => ({
-          slotIndex: definition.slotIndex,
-          date: definition.dateValue,
-          slot: definition.slotLabel,
-        }));
+  setClassSubjects((prev) => {
+    const next = [...prev];
+    const currentEntry = next[activeClassIndex] || normaliseClassEntry(null, activeClassIndex);
 
-      const definition = slotDefinitions[activeSlotIndex];
-      const existingSlot = slots[activeSlotIndex] || { slotIndex: activeSlotIndex };
+    // Clone existing slots or create fresh from definitions
+    const slots = slotDefinitions.map((definition, i) => {
+      const existing = currentEntry.slots?.[i];
+      return {
+        slotIndex: i,
+        date: definition.dateValue,
+        slot: definition.slotLabel,
+        ...(existing || {}),
+      };
+    });
 
-      const priceValue = Number(selection.subject?.price);
+    // 🔹 FIXED: use slot count (not duration)
+    const duration = Number(selection.subject?.slot || 1);
+    const priceValue = Number(selection.subject?.price);
 
-      slots[activeSlotIndex] = {
-        ...existingSlot,
-        slotIndex: activeSlotIndex,
-        date: definition?.dateValue || existingSlot.date || null,
-        slot: definition?.slotLabel || existingSlot.slot || null,
+    // 🔹 Apply selected subject to active slot + next (duration - 1) slots
+    for (let offset = 0; offset < duration; offset++) {
+      const targetSlotIndex = activeSlotIndex + offset;
+      if (targetSlotIndex >= slots.length) break;
+
+      const definition = slotDefinitions[targetSlotIndex];
+      slots[targetSlotIndex] = {
+        ...slots[targetSlotIndex],
+        slotIndex: targetSlotIndex,
+        date: definition?.dateValue || null,
+        slot: definition?.slotLabel || null,
         subject: selection.subject,
         code: selection.subject?.code || null,
         name_th: selection.subject?.name_th || null,
@@ -177,18 +196,20 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
         subcategoryLabel: selection.subcategoryLabel || null,
         price: Number.isFinite(priceValue) ? priceValue : null,
       };
+    }
 
-      next[activeClassIndex] = {
-        ...currentEntry,
-        classNumber: currentEntry.classNumber || activeClassIndex + 1,
-        slots,
-      };
+    next[activeClassIndex] = {
+      ...currentEntry,
+      classNumber: currentEntry.classNumber || activeClassIndex + 1,
+      slots,
+    };
 
-      return next;
-    });
+    return next;
+  });
 
-    closeModal();
-  };
+  closeModal();
+};
+
 
   const validateSelections = () => {
     if (!slotDefinitions.length) {
@@ -219,13 +240,13 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
     if (!validateSelections()) return;
     updateFormData({ classSubjects });
     if (onNext) onNext();
-    else navigate("/user-info");
+    else navigate("/reservation/user-info");
   };
 
   const handleBack = () => {
     updateFormData({ classSubjects });
     if (onPrev) onPrev();
-    else navigate("/dates");
+    else navigate("/reservation/dates");
   };
 
   useImperativeHandle(ref, () => ({ next: handleNext, prev: handleBack }));
@@ -431,7 +452,11 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
         isModalVisible={isModalVisible}
         handleCancel={closeModal}
         onSubjectSelected={handleSubjectSelected}
-        numberOfStudents={formData.numberOfStudents || 1}
+        classStudentCount={
+          activeClassIndex !== null
+            ? studentsPerClass[activeClassIndex] || 0
+            : formData.numberOfStudents || 0
+        }
         initialSelection={
           activeClassIndex !== null &&
             activeSlotIndex !== null &&

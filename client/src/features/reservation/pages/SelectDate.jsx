@@ -136,7 +136,7 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
     if (onNext) {
       onNext();
     } else {
-      navigate('/subjects');
+      navigate('/reservation/subjects');
     }
   };
 
@@ -147,7 +147,7 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
     if (onPrev) {
       onPrev();
     } else {
-      navigate('/time');
+      navigate('/reservation');
     }
   };
 

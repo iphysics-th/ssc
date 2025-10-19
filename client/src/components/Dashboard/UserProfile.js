@@ -1,5 +1,17 @@
-import React, { useEffect, useMemo } from 'react';
-import { Avatar, Card, Col, Form, Input, Row, Select, Space, Typography, message, Button } from 'antd';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Avatar,
+  Card,
+  Col,
+  Form,
+  Input,
+  Row,
+  Select,
+  Space,
+  Typography,
+  message,
+  Button,
+} from 'antd';
 import { useSelector } from 'react-redux';
 import { useFormData } from '../../contexts/FormDataContext';
 import {
@@ -14,6 +26,7 @@ const UserProfile = () => {
   const [form] = Form.useForm();
   const auth = useSelector((state) => state.auth);
   const { updateFormData } = useFormData();
+  const [hasPrefilled, setHasPrefilled] = useState(false); // ✅ prevent re-filling
 
   const {
     data: profileData,
@@ -22,36 +35,35 @@ const UserProfile = () => {
     error,
     refetch,
   } = useGetUserProfileQuery();
-  const [updateUserProfile, { isLoading: isSaving }] = useUpdateUserProfileMutation();
+
+  const [updateUserProfile, { isLoading: isSaving }] =
+    useUpdateUserProfileMutation();
 
   const accountInfo = useMemo(() => {
-    if (profileData?.account) {
-      return profileData.account;
-    }
+    if (profileData?.account) return profileData.account;
     return typeof auth.user === 'object' ? auth.user : null;
   }, [profileData, auth.user]);
 
+  // Normalize nulls to empty string
+  const normalizeProfile = (obj = {}) =>
+    Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v ?? '']));
+
+  // ✅ Prefill only ONCE
   useEffect(() => {
-    if (!profileData) {
-      return;
-    }
+    if (!profileData || hasPrefilled) return; // prevent overwrite after user edit
 
     const reservationProfile = profileData?.reservationProfile;
-    if (reservationProfile) {
-      form.setFieldsValue(reservationProfile);
-      updateFormData({ ...reservationProfile, __profilePrefilled: true });
-      return;
-    }
-
-    if (profileData?.account) {
-      const defaults = {
+    const defaults =
+      reservationProfile ||
+      {
         name: profileData.account?.name || '',
         mail: profileData.account?.email || '',
       };
-      form.setFieldsValue(defaults);
-      updateFormData({ ...defaults, __profilePrefilled: true });
-    }
-  }, [profileData, form, updateFormData]);
+
+    form.setFieldsValue(normalizeProfile(defaults));
+    updateFormData({ ...defaults, __profilePrefilled: true });
+    setHasPrefilled(true);
+  }, [profileData, form, updateFormData, hasPrefilled]);
 
   useEffect(() => {
     if (error) {
@@ -74,28 +86,27 @@ const UserProfile = () => {
   };
 
   const displayRoles = useMemo(() => {
-    if (!accountInfo) {
-      return [];
-    }
-    if (Array.isArray(accountInfo.roles)) {
-      return accountInfo.roles;
-    }
-    if (typeof accountInfo.role === 'string') {
-      return [accountInfo.role];
-    }
+    if (!accountInfo) return [];
+    if (Array.isArray(accountInfo.roles)) return accountInfo.roles;
+    if (typeof accountInfo.role === 'string') return [accountInfo.role];
     return [];
   }, [accountInfo]);
 
   return (
     <div>
-      <Title level={3} className="dashboard-section-title">ข้อมูลบัญชีผู้ใช้</Title>
+      <Title level={3} className="dashboard-section-title">
+        ข้อมูลบัญชีผู้ใช้
+      </Title>
+
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={10}>
           <Card loading={isLoading} bordered>
             <Space align="start" size="large">
               <Avatar size={64} src={accountInfo?.avatar} />
               <div>
-                <Title level={4} style={{ margin: 0 }}>{accountInfo?.username || accountInfo?.name || '-'}</Title>
+                <Title level={4} style={{ margin: 0 }}>
+                  {accountInfo?.username || accountInfo?.name || '-'}
+                </Title>
                 <Text type="secondary">{accountInfo?.email || '-'}</Text>
                 <div style={{ marginTop: 8 }}>
                   <Text strong>สิทธิ์:</Text>{' '}
@@ -105,12 +116,19 @@ const UserProfile = () => {
             </Space>
           </Card>
         </Col>
+
         <Col xs={24} lg={14}>
-          <Card title="ข้อมูลสำหรับการจอง" bordered loading={isFetching && !profileData}>
+          <Card
+            title="ข้อมูลสำหรับการจอง"
+            bordered
+            loading={isFetching && !profileData}
+          >
             <Form
               form={form}
               layout="vertical"
               onFinish={handleSubmit}
+              initialValues={{}}
+              preserve={false}
             >
               <Row gutter={16}>
                 <Col xs={24} md={12}>
@@ -127,6 +145,7 @@ const UserProfile = () => {
                     </Select>
                   </Form.Item>
                 </Col>
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     label="ตำแหน่ง"
@@ -142,6 +161,7 @@ const UserProfile = () => {
                   </Form.Item>
                 </Col>
               </Row>
+
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item
@@ -149,19 +169,21 @@ const UserProfile = () => {
                     name="name"
                     rules={[{ required: true, message: 'กรุณาใส่ชื่อ' }]}
                   >
-                    <Input />
+                    <Input placeholder="ชื่อจริง" />
                   </Form.Item>
                 </Col>
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     label="สกุล"
                     name="surname"
                     rules={[{ required: true, message: 'กรุณาใส่นามสกุล' }]}
                   >
-                    <Input />
+                    <Input placeholder="นามสกุล" />
                   </Form.Item>
                 </Col>
               </Row>
+
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item
@@ -169,19 +191,27 @@ const UserProfile = () => {
                     name="telephone"
                     rules={[{ required: true, message: 'กรุณาใส่เบอร์โทรศัพท์' }]}
                   >
-                    <Input />
+                    <Input placeholder="เช่น 0812345678" />
                   </Form.Item>
                 </Col>
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     label="อีเมลสำหรับการติดต่อกลับ"
                     name="mail"
-                    rules={[{ required: true, type: 'email', message: 'กรุณาใส่อีเมลที่ถูกต้อง' }]}
+                    rules={[
+                      {
+                        required: true,
+                        type: 'email',
+                        message: 'กรุณาใส่อีเมลที่ถูกต้อง',
+                      },
+                    ]}
                   >
-                    <Input />
+                    <Input placeholder="example@email.com" />
                   </Form.Item>
                 </Col>
               </Row>
+
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item
@@ -189,9 +219,10 @@ const UserProfile = () => {
                     name="school"
                     rules={[{ required: true, message: 'กรุณาใส่ชื่อโรงเรียน' }]}
                   >
-                    <Input />
+                    <Input placeholder="ชื่อโรงเรียน" />
                   </Form.Item>
                 </Col>
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     label="ขนาดโรงเรียน"
@@ -207,15 +238,13 @@ const UserProfile = () => {
                   </Form.Item>
                 </Col>
               </Row>
+
               <Form.Item>
                 <Space>
                   <Button type="primary" htmlType="submit" loading={isSaving}>
                     บันทึกข้อมูล
                   </Button>
-                  <Button
-                    onClick={() => form.resetFields()}
-                    disabled={isSaving}
-                  >
+                  <Button onClick={() => form.resetFields()} disabled={isSaving}>
                     ล้างข้อมูล
                   </Button>
                 </Space>
@@ -229,4 +258,3 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
-

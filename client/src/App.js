@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes} from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Layout } from 'antd';
 import Services from './components/Services/Services';
 import STEMSSCDetail from './components/Services/STEMSSC';
@@ -47,11 +47,15 @@ const App = () => {
               <Route path="/instrument" element={<Instrument />} />
               <Route path="/contact" element={<ContactUs />} />
               <Route path="/reservation" element={<ReservationProgress initialStep={0} />} />
-              <Route path="/time" element={<ReservationProgress initialStep={0} />} />
-              <Route path="/dates" element={<ReservationProgress initialStep={1} />} />
-              <Route path="/subjects" element={<ReservationProgress initialStep={2} />} />
-              <Route path="/user-info" element={<ReservationProgress initialStep={3} />} />
-              <Route path="/summary" element={<ReservationProgress initialStep={4} />} />
+              <Route path="/reservation/dates" element={<ReservationProgress initialStep={1} />} />
+              <Route path="/reservation/subjects" element={<ReservationProgress initialStep={2} />} />
+              <Route path="/reservation/user-info" element={<ReservationProgress initialStep={3} />} />
+              <Route path="/reservation/summary" element={<ReservationProgress initialStep={4} />} />
+              <Route path="/time" element={<Navigate to="/reservation" replace />} />
+              <Route path="/dates" element={<Navigate to="/reservation/dates" replace />} />
+              <Route path="/subjects" element={<Navigate to="/reservation/subjects" replace />} />
+              <Route path="/user-info" element={<Navigate to="/reservation/user-info" replace />} />
+              <Route path="/summary" element={<Navigate to="/reservation/summary" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/reservecheck" element={<ReserveCheck />} />
               <Route path="/signup" element={<SignUp />} />

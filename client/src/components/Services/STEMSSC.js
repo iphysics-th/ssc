@@ -12,7 +12,7 @@ const STEMSSCDetail = () => {
   };
 
   const handleGoToReservation = () => {
-    navigate('/time');
+    navigate('/reservation');
   };
 
   return (
@@ -36,4 +36,3 @@ const STEMSSCDetail = () => {
 };
 
 export default STEMSSCDetail;
-

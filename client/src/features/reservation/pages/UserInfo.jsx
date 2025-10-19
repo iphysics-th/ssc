@@ -30,7 +30,7 @@ const UserInfoForm = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
     if (onNext) {
       onNext();
     } else {
-      navigate('/summary');
+      navigate('/reservation/summary');
     }
   };
 
@@ -39,7 +39,7 @@ const UserInfoForm = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
     if (onPrev) {
       onPrev();
     } else {
-      navigate('/subjects');
+      navigate('/reservation/subjects');
     }
   };
 

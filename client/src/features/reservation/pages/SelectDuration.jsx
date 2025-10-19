@@ -137,7 +137,7 @@ const CourseSelection = forwardRef(({ onNext, embedded = false }, ref) => {
     if (onNext) {
       onNext();
     } else {
-      navigate('/user-info');
+      navigate('/reservation/user-info');
     }
   };
 

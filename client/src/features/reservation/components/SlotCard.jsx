@@ -10,19 +10,19 @@ const StepNavigation = () => {
 
   useEffect(() => {
     switch (location.pathname) {
-      case '/time':
+      case '/reservation':
         setCurrentStep(0);
         break;
-      case '/dates':
+      case '/reservation/dates':
         setCurrentStep(1);
         break;
-      case '/subjects':
+      case '/reservation/subjects':
         setCurrentStep(2);
         break;
-      case '/user-info':
+      case '/reservation/user-info':
         setCurrentStep(3);
         break;
-      case '/summary':
+      case '/reservation/summary':
         setCurrentStep(4);
         break;
       default:

@@ -1,4 +1,5 @@
 const dayjs = require('dayjs');
+const { groupClassSubjects, countUniqueClasses } = require('../app/utils/classGrouping');
 
 const monthMapping = {
   'January': 'มกราคม',
@@ -72,47 +73,22 @@ const generateLineMessage = (reservation) => {
     });
   }
 
-  let classData = [];
-  if (Array.isArray(reservation.classSubjects) && reservation.classSubjects.length) {
-    classData = reservation.classSubjects;
-  } else if (Array.isArray(reservation.slotSelections) && reservation.slotSelections.length) {
-    const grouped = reservation.slotSelections.reduce((acc, slot) => {
-      const classNumber = slot.classNumber || 1;
-      if (!acc[classNumber]) {
-        acc[classNumber] = [];
-      }
-      acc[classNumber].push(slot);
-      return acc;
-    }, {});
-
-    classData = Object.entries(grouped).map(([classNumber, slots]) => ({
-      classNumber: Number(classNumber),
-      slots: slots.map((slot, index) => ({
-        slotIndex: slot.slotIndex ?? index,
-        date: slot.date || null,
-        slot: slot.slot || slot.time || null,
-        subject:
-          slot.subject ||
-          (slot.name_th ? { code: slot.code || null, name_th: slot.name_th } : null),
-        code: slot.code || null,
-        name_th: slot.name_th || null,
-        level: slot.level || null,
-        levelLabel: slot.levelLabel || null,
-        category: slot.category || null,
-        categoryLabel: slot.categoryLabel || null,
-        subcategory: slot.subcategory || null,
-        subcategoryLabel: slot.subcategoryLabel || null,
-      })),
-    }));
-  }
+  const classData = groupClassSubjects(reservation.classSubjects || []);
+  const studentsPerClass = Array.isArray(reservation.studentsPerClass)
+    ? reservation.studentsPerClass
+    : [];
 
   if (classData.length) {
     bookingDetails += '\n\nรายวิชาตามห้องเรียน:';
     classData.forEach((item, index) => {
       const classLabel = item.classNumber || index + 1;
       const slots = Array.isArray(item.slots) ? item.slots : [];
+      const studentCount =
+        studentsPerClass[item.classNumber - 1] ?? studentsPerClass[index] ?? null;
+      const studentSuffix = studentCount ? ` (${studentCount} คน)` : '';
+
       if (!slots.length) {
-        bookingDetails += `\n  - ห้อง ${classLabel}: ไม่พบข้อมูลรายวิชา`;
+        bookingDetails += `\n  - ห้อง ${classLabel}${studentSuffix}: ไม่พบข้อมูลรายวิชา`;
         return;
       }
 
@@ -129,7 +105,7 @@ const generateLineMessage = (reservation) => {
         const dateLabel = slot.date ? formatBuddhistDate(new Date(slot.date)) : '-';
         const slotLabel = slot.slot || slot.time || '';
         const scheduleInfo = slotLabel ? `${dateLabel} • ${slotLabel}` : dateLabel;
-        bookingDetails += `\n  - ห้อง ${classLabel}: ${subjectName}${codeSuffix} • ${scheduleInfo}`;
+        bookingDetails += `\n  - ห้อง ${classLabel}${studentSuffix}: ${subjectName}${codeSuffix} • ${scheduleInfo}`;
       });
     });
   }
@@ -137,7 +113,11 @@ const generateLineMessage = (reservation) => {
   const firstSelectedDate = Array.isArray(reservation.selectedDates) && reservation.selectedDates.length
     ? formatBuddhistDate(reservation.selectedDates[0])
     : '-';
-  const totalClasses = reservation.numberOfClasses || classData.length || 1;
+  const totalClasses = countUniqueClasses(reservation.classSubjects || []) || reservation.numberOfClasses || 1;
+  const totalStudents = studentsPerClass.reduce((acc, value) => {
+    const numeric = Number(value);
+    return acc + (Number.isFinite(numeric) && numeric > 0 ? numeric : 0);
+  }, 0);
   const contactEmail = reservation.mail || reservation.email || reservation.userInfo?.email || '-';
 
   let message = `มีการจองใหม่:
@@ -146,7 +126,7 @@ const generateLineMessage = (reservation) => {
     \nโรงเรียน - ${reservation.school}
     \nโทรศัพท์ - ${reservation.telephone}
     \nอีเมล - ${contactEmail}
-    \nจำนวนนักเรียน - ${reservation.numberOfStudents} คน
+    \nจำนวนนักเรียน - ${totalStudents || reservation.numberOfStudents || '-'} คน
     \nจำนวนห้องเรียน - ${totalClasses} ห้อง
     \nวันที่ทำการจอง - ${firstSelectedDate}
     \n\nรายละเอียดการจอง:${bookingDetails || '\n  - ไม่พบข้อมูลรายวิชา'}

@@ -54,6 +54,7 @@ module.exports = mongoose => {
       schoolSize: String,
       reservationNumber: String,
       price: Number,
+      studentsPerClass: [Number],
       userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'user',
