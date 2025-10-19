@@ -5,7 +5,8 @@ import {
   Spin,
   Typography,
   Divider,
-  Table,
+  Tag,
+  Modal,
 } from "antd";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
@@ -24,6 +25,14 @@ const formatBuddhistDate = (value) => {
   const buddhistYear = date.year() + 543;
   const monthName = date.locale("th").format("MMMM");
   return `${date.format("D")} ${monthName} ${buddhistYear}`;
+};
+
+const formatMonthYear = (value) => {
+  const date = dayjs(value);
+  if (!date.isValid()) return "-";
+  const buddhistYear = date.year() + 543;
+  const monthName = date.locale("th").format("MMMM");
+  return `${monthName} ${buddhistYear}`;
 };
 
 const confirmationDotColorMap = {
@@ -71,6 +80,8 @@ const UserReservations = () => {
 
   const [hasTriggeredFallback, setHasTriggeredFallback] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [selectedReservation, setSelectedReservation] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
     const shouldTriggerFallback =
@@ -124,6 +135,7 @@ const UserReservations = () => {
   }, [primaryReservations, fallbackReservations]);
 
   const isLoading = isPrimaryLoading || (hasTriggeredFallback && isFallbackFetching);
+  const currency = (v) => Number(v || 0).toLocaleString("th-TH");
 
   if (isLoading)
     return (
@@ -146,151 +158,116 @@ const UserReservations = () => {
       />
     );
 
-  const subjectColumns = [
-    {
-      title: "วันที่",
-      dataIndex: "date",
-      key: "date",
-      width: "18%",
-      render: (v) => formatBuddhistDate(v),
-    },
-    {
-      title: "ช่วงเวลา",
-      dataIndex: "slot",
-      key: "slot",
-      width: "10%",
-      align: "center",
-    },
-    {
-      title: "ชื่อวิชา",
-      dataIndex: "subjectName",
-      key: "subjectName",
-      render: (v, r) => (
-        <>
-          {v}{" "}
-          {r.code && (
-            <Text type="secondary" style={{ fontSize: "0.8rem" }}>
-              ({r.code})
-            </Text>
-          )}
-        </>
-      ),
-    },
-    {
-      title: "ระดับ",
-      dataIndex: "levelLabel",
-      key: "levelLabel",
-      width: "12%",
-    },
-    {
-      title: "กลุ่มวิชา",
-      dataIndex: "categoryLabel",
-      key: "categoryLabel",
-      width: "18%",
-    },
-    {
-      title: "กลุ่มวิชาย่อย",
-      dataIndex: "subcategoryLabel",
-      key: "subcategoryLabel",
-      width: "18%",
-    },
-    {
-      title: "ราคา (บาท)",
-      dataIndex: "price",
-      key: "price",
-      align: "right",
-      width: "12%",
-      render: (v) => v?.toLocaleString("th-TH") || "0",
-    },
-  ];
+  /** group by month-year (descending) */
+  const groupedByMonth = reservations.reduce((acc, reservation) => {
+    const created = reservation.createdAt || reservation.selectedDates?.[0];
+    const key = created ? dayjs(created).format("YYYY-MM") : "unknown";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(reservation);
+    return acc;
+  }, {});
 
-  // ✅ Card Stack Aesthetic
+  const sortedGroups = Object.entries(groupedByMonth)
+    .sort(([a], [b]) => (dayjs(b).isAfter(dayjs(a)) ? 1 : -1))
+    .map(([key, items]) => ({
+      monthLabel: formatMonthYear(key),
+      reservations: items,
+    }));
+
+  /** modal open */
+  const openModal = (reservation) => {
+    setSelectedReservation(reservation);
+    setIsModalVisible(true);
+  };
+
+  /** modal close */
+  const closeModal = () => {
+    setIsModalVisible(false);
+    setSelectedReservation(null);
+  };
+
   return (
     <div>
-      <Title level={3} className="dashboard-section-title">
-        การจองของฉัน
-      </Title>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 24,
-          marginTop: 20,
-        }}
-      >
-        {reservations.map((reservation, index) => {
-          const selectedDates = Array.isArray(reservation.selectedDates)
-            ? reservation.selectedDates.map((d) => formatBuddhistDate(d)).join(", ")
-            : "-";
+      {sortedGroups.map(({ monthLabel, reservations }) => (
+        <div key={monthLabel} style={{ marginBottom: 40 }}>
+          <div
+            style={{
+              fontSize: "1.1rem",
+              fontWeight: 700,
+              color: "#0f172a",
+              marginBottom: 10,
+              borderLeft: "5px solid #1677ff",
+              paddingLeft: 10,
+            }}
+          >
+            {monthLabel}
+          </div>
 
-          const classSubjects = Array.isArray(reservation.classSubjects)
-            ? reservation.classSubjects
-            : [];
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gap: 20,
+            }}
+          >
+            {reservations.map((reservation, index) => {
+              const createdAt = reservation.createdAt
+                ? formatBuddhistDate(reservation.createdAt)
+                : "-";
+              const selectedDates = Array.isArray(reservation.selectedDates)
+                ? reservation.selectedDates.map((d) => formatBuddhistDate(d))
+                : [];
 
-          const price = Number(reservation.price || 0);
-          const status = reservation.confirmation || "received";
-          const style = statusStyleMap[status] || statusStyleMap.received;
-          const statusColor = confirmationDotColorMap[status] || "#999";
-          const statusText = translateConfirmationStatus(status);
+              const price = Number(reservation.price || 0);
+              const status = reservation.confirmation || "received";
+              const style = statusStyleMap[status] || statusStyleMap.received;
+              const statusColor = confirmationDotColorMap[status] || "#999";
+              const statusText = translateConfirmationStatus(status);
 
-          return (
-            <Card
-              key={reservation._id || index}
-              bordered={false}
-              hoverable
-              style={{
-                borderRadius: 16,
-                boxShadow: "0 6px 15px rgba(0,0,0,0.1)",
-                background:
-                  index % 2 === 0
-                    ? "linear-gradient(145deg, #f9fafb, #ffffff)"
-                    : "linear-gradient(145deg, #f3f4f6, #ffffff)",
-                overflow: "hidden",
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
-              }}
-            >
-              {/* Header Row: Price + Status */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: 12,
-                }}
-              >
-                <div>
-                  <Text strong style={{ fontSize: "1rem", color: "#1677ff" }}>
-                    ค่าบริการรวม: {price.toLocaleString("th-TH")} บาท
-                  </Text>
-                  <br />
-                  <Text type="secondary">
+              return (
+                <Card
+                  key={reservation._id || index}
+                  hoverable
+                  onClick={() => openModal(reservation)}
+                  style={{
+                    borderRadius: 16,
+                    boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                    background: "linear-gradient(145deg,#f9fafb,#ffffff)",
+                    transition: "transform 0.2s ease",
+                    cursor: "pointer",
+                  }}
+                  bodyStyle={{ padding: "18px 22px" }}
+                >
+                  <Text strong style={{ color: "#1677ff", fontSize: "1.05rem" }}>
                     หมายเลขการจอง: {reservation.reservationNumber || "-"}
                   </Text>
-                </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    minWidth: "200px",
-                  }}
-                >
-                  <Text strong style={{ marginBottom: 4, color: "#334155" }}>
-                    สถานะการจอง:
-                  </Text>
+                  <Divider style={{ margin: "10px 0" }} />
+
+                  <Text strong>ค่าบริการรวม: </Text>
+                  <Text>{currency(price)} บาท</Text>
+                  <br />
+
+                  <Text strong>วันที่ทำการจอง: </Text>
+                  <Text>{createdAt}</Text>
+                  <br />
+
+                  <Text strong>วันที่อบรม: </Text>
+                  <Text>{selectedDates.join(", ") || "-"}</Text>
+                  <Divider style={{ margin: "10px 0" }} />
+
                   <div
                     style={{
                       background: style.bg,
                       color: style.color,
-                      padding: "6px 14px",
+                      padding: "6px 12px",
                       borderRadius: "20px",
                       fontWeight: 600,
-                      display: "flex",
+                      display: "inline-flex",
                       alignItems: "center",
                       gap: 6,
-                      fontSize: "0.95rem",
+                      fontSize: "0.9rem",
                     }}
                   >
                     <span
@@ -304,80 +281,242 @@ const UserReservations = () => {
                     ></span>
                     {statusText}
                   </div>
-                </div>
-              </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ))}
 
-              <Divider style={{ margin: "10px 0" }} />
+      {/* ========== Modal for Reservation Detail ========== */}
+      <Modal
+        open={isModalVisible}
+        onCancel={closeModal}
+        footer={null}
+        width={800}
+        centered
+        title={
+          <div style={{ textAlign: "center", fontWeight: 700 }}>
+            รายละเอียดการจอง
+          </div>
+        }
+        bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
+      >
+        {selectedReservation && (
+          <ReservationDetailCard
+            reservation={selectedReservation}
+            currency={currency}
+          />
+        )}
+      </Modal>
+    </div>
+  );
+};
 
-              <Text strong>วันที่อบรม:</Text> <Text>{selectedDates}</Text>
-              <br />
-              <Text strong>จำนวนห้องเรียน:</Text>{" "}
-              <Text>{reservation.numberOfClasses || 1}</Text>
+/* =====================================================
+   Reservation Detail Component (inside Modal)
+   ===================================================== */
+const ReservationDetailCard = ({ reservation, currency }) => {
+  const { Text, Title } = Typography;
 
-              {classSubjects.length > 0 && (
-                <>
-                  <Divider plain style={{ margin: "10px 0" }}>
-                    <Text type="secondary">รายละเอียดรายวิชา</Text>
-                  </Divider>
+  const selectedDates = Array.isArray(reservation.selectedDates)
+    ? reservation.selectedDates.map((d) => formatBuddhistDate(d))
+    : [];
 
-                  {classSubjects.map((classItem, classIndex) => {
-                    const subjectEntries = (classItem.slots || []).map((slot, i) => ({
-                      key: `${classItem.classNumber}-${i}`,
-                      date: slot?.date || "-",
-                      slot: slot?.slot || "-",
-                      subjectName: slot?.subject?.name_th || slot?.name_th || "-",
-                      code: slot?.subject?.code || slot?.code || "-",
-                      levelLabel:
-                        slot?.levelLabel ||
-                        slot?.subject?.level_th ||
-                        slot?.subject?.level_en ||
-                        "-",
-                      categoryLabel:
-                        slot?.categoryLabel ||
-                        slot?.subject?.category_th ||
-                        slot?.subject?.category_en ||
-                        "-",
-                      subcategoryLabel:
-                        slot?.subcategoryLabel ||
-                        slot?.subject?.subcategory_th ||
-                        slot?.subject?.subcategory_en ||
-                        "-",
-                      price: Number(slot?.subject?.price || slot?.price || 0),
-                    }));
+  const classSubjects = Array.isArray(reservation.classSubjects)
+    ? reservation.classSubjects
+    : [];
 
-                    return (
-                      <Card
-                        key={`class-${classIndex}`}
-                        size="small"
-                        style={{
-                          marginTop: 12,
-                          borderRadius: 10,
-                          background: "#ffffff",
-                          border: "1px solid #e2e8f0",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                        }}
-                        title={`ห้องเรียนที่ ${classItem.classNumber || classIndex + 1}`}
-                      >
-                        {subjectEntries.length ? (
-                          <Table
-                            columns={subjectColumns}
-                            dataSource={subjectEntries}
-                            pagination={false}
-                            size="small"
-                            bordered
-                          />
-                        ) : (
-                          <Text type="secondary">ยังไม่ได้เลือกวิชา</Text>
-                        )}
-                      </Card>
-                    );
-                  })}
-                </>
-              )}
-            </Card>
-          );
-        })}
+  const price = Number(reservation.price || 0);
+  const status = reservation.confirmation || "received";
+  const style = statusStyleMap[status] || statusStyleMap.received;
+  const statusColor = confirmationDotColorMap[status] || "#999";
+  const statusText = translateConfirmationStatus(status);
+
+  return (
+    <div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          marginBottom: 12,
+        }}
+      >
+        <div>
+          <Text strong style={{ fontSize: "1rem", color: "#1677ff" }}>
+            ค่าบริการรวม: {currency(price)} บาท
+          </Text>
+          <br />
+          <Text type="secondary">
+            หมายเลขการจอง: {reservation.reservationNumber || "-"}
+          </Text>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            minWidth: "180px",
+          }}
+        >
+          <Text strong style={{ color: "#334155" }}>
+            สถานะการจอง:
+          </Text>
+          <div
+            style={{
+              background: style.bg,
+              color: style.color,
+              padding: "6px 14px",
+              borderRadius: 20,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: "0.95rem",
+            }}
+          >
+            <span
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: statusColor,
+              }}
+            ></span>
+            {statusText}
+          </div>
+        </div>
       </div>
+
+      <Divider style={{ margin: "14px 0" }} />
+
+      <Text strong>วันที่อบรม:</Text>{" "}
+      <Text>{selectedDates.join(", ") || "-"}</Text>
+      <br />
+      <Text strong>จำนวนห้องเรียน:</Text>{" "}
+      <Text>{reservation.numberOfClasses || 1}</Text>
+
+      {classSubjects.map((cls, i) => {
+        const classNumber = cls.classNumber || i + 1;
+        const slots = cls.slots || [];
+
+        const uniqueSubjects = {};
+        slots.forEach((slot) => {
+          const subj = slot?.subject;
+          if (!subj) return;
+          const code = subj.code || slot.code;
+          if (!uniqueSubjects[code]) {
+            uniqueSubjects[code] = {
+              ...subj,
+              code,
+              price: subj.price || 0,
+              level_th: subj.level_th || "-",
+              category_th: subj.category_th || "-",
+              subcategory_th: subj.subcategory_th || "-",
+              slotCount: subj.slot || 1,
+              dates: {},
+            };
+          }
+          const dateKey = slot.date
+            ? dayjs(slot.date).format("YYYY-MM-DD")
+            : "unknown";
+          if (!uniqueSubjects[code].dates[dateKey]) {
+            uniqueSubjects[code].dates[dateKey] = new Set();
+          }
+          if (slot.slot?.includes("เช้า"))
+            uniqueSubjects[code].dates[dateKey].add("9.00–12.00");
+          else if (slot.slot?.includes("บ่าย"))
+            uniqueSubjects[code].dates[dateKey].add("13.00–16.00");
+          else if (slot.slot)
+            uniqueSubjects[code].dates[dateKey].add(slot.slot);
+        });
+
+        const subjectsArray = Object.values(uniqueSubjects);
+        const totalClassPrice = subjectsArray.reduce(
+          (a, b) => a + (b.price || 0),
+          0
+        );
+
+        return (
+          <div key={i} style={{ marginTop: 24 }}>
+            <div
+              style={{
+                background: "linear-gradient(90deg,#eff6ff,#ffffff)",
+                padding: "10px 16px",
+                borderRadius: 8,
+                borderLeft: "5px solid #1677ff",
+                marginBottom: 12,
+              }}
+            >
+              <Title level={4} style={{ margin: 0, color: "#0f172a" }}>
+                ห้องเรียนที่ {classNumber}
+              </Title>
+            </div>
+
+            {subjectsArray.length > 0 ? (
+              subjectsArray.map((record, idx) => (
+                <Card
+                  key={idx}
+                  size="small"
+                  style={{
+                    marginBottom: 12,
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 10,
+                    background: "#ffffff",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+                  }}
+                >
+                  <div
+                    style={{
+                      marginBottom: 8,
+                      paddingBottom: 6,
+                      borderBottom: "1px dashed #e2e8f0",
+                    }}
+                  >
+                    {Object.entries(record.dates).map(([date, times]) => (
+                      <div key={date}>
+                        <Text strong>{formatBuddhistDate(date)}:</Text>{" "}
+                        <Text type="secondary">
+                          {Array.from(times).join(" และ ")}
+                        </Text>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <strong>{record.name_th}</strong>{" "}
+                    {record.code && (
+                      <Text type="secondary" style={{ fontSize: "0.85rem" }}>
+                        ({record.code})
+                      </Text>
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: 6 }}>
+                    <Tag color="blue">{record.level_th}</Tag>
+                    <Tag color="cyan">{record.category_th}</Tag>
+                    <Tag color="purple">{record.subcategory_th}</Tag>
+                    <Tag color="magenta">
+                      ระยะเวลาเรียน {record.slotCount * 3} ชั่วโมง
+                    </Tag>
+                    <Tag color="gold">
+                      ฿{record.price.toLocaleString("th-TH")}
+                    </Tag>
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <Text type="secondary">ยังไม่ได้เลือกวิชา</Text>
+            )}
+
+            <div style={{ textAlign: "right", marginTop: 8 }}>
+              <Text strong>รวม: {currency(totalClassPrice)} บาท</Text>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
