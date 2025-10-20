@@ -155,6 +155,35 @@ export const reservationApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: [{ type: "Subjects", id: "LIST" }],
     }),
+    getReservationRules: builder.query({
+      query: () => ({
+        url: "api/reservation/unavailable",
+        method: "GET",
+      }),
+      providesTags: ["ReservationRules"],
+    }),
+    getReservationRulesAdmin: builder.query({
+      query: () => ({
+        url: "api/admin/reservation-rules",
+        method: "GET",
+      }),
+      providesTags: ["ReservationRules"],
+    }),
+    createReservationRule: builder.mutation({
+      query: (body) => ({
+        url: "api/admin/reservation-rules",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["ReservationRules"],
+    }),
+    deleteReservationRule: builder.mutation({
+      query: (id) => ({
+        url: `api/admin/reservation-rules/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ReservationRules"],
+    }),
   }),
 });
 
@@ -184,4 +213,8 @@ export const {
   useDeleteSubjectMutation,
   useUpdateCategoryStatusMutation,
   useUpdateSubcategoryStatusMutation,
+  useGetReservationRulesQuery,
+  useGetReservationRulesAdminQuery,
+  useCreateReservationRuleMutation,
+  useDeleteReservationRuleMutation,
 } = reservationApiSlice;

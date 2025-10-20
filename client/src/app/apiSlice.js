@@ -77,6 +77,7 @@ export const apiSlice = createApi({
     "Slides",
     "AdminUsers",
     "Lecturers",
+    "ReservationRules",
   ],
   endpoints: () => ({}),
 });

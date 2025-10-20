@@ -74,6 +74,7 @@ require("./app/routes/slide.routes")(app);
 require("./app/routes/reservation.routes")(app);
 require("./app/routes/subject.routes")(app);
 require("./app/routes/admin.routes")(app);
+require("./app/routes/reservationRule.routes")(app);
 
 
 

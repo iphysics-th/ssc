@@ -16,6 +16,7 @@ import ReservationTable from "../Admin/reservationData";
 import SlideUploadComponent from "../Admin/slideUpload";
 import CourseManagement from "../Admin/CourseManagement";
 import UserManagement from "./UserManagement";
+import ReservationRulesAdmin from "../Admin/ReservationRulesAdmin";
 import {
   UserOutlined,
   BookOutlined,
@@ -24,6 +25,7 @@ import {
   SettingOutlined,
   TeamOutlined,
   MenuOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 
 const { Sider, Content } = Layout;
@@ -52,6 +54,7 @@ const Dashboard = () => {
         { key: "reservation-data", label: "ข้อมูลการจองทั้งหมด", icon: <TableOutlined /> },
         { key: "slide-upload", label: "อัปโหลดสไลด์", icon: <UploadOutlined /> },
         { key: "course-management", label: "จัดการคอร์ส", icon: <SettingOutlined /> },
+        { key: "reservation-rules", label: "ตั้งค่าการปิดรับ", icon: <CalendarOutlined /> },
         { key: "user-management", label: "จัดการผู้ใช้", icon: <TeamOutlined /> }
       );
     }
@@ -200,7 +203,7 @@ const Dashboard = () => {
                     onClick={() => setIsDrawerOpen(true)}
                     style={{ borderRadius: 12 }}
                   >
-                    เมนู
+                    เมนูแดชบอร์ด
                   </Button>
                 )}
               </div>
@@ -216,6 +219,9 @@ const Dashboard = () => {
                 )}
                 {isAdmin && selectedKey === "course-management" && (
                   <CourseManagement />
+                )}
+                {isAdmin && selectedKey === "reservation-rules" && (
+                  <ReservationRulesAdmin />
                 )}
                 {isAdmin && selectedKey === "user-management" && (
                   <UserManagement />

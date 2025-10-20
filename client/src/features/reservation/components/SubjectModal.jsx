@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import dayjs from "dayjs";
+import "dayjs/locale/th";
 import {
   Modal,
   Button,
@@ -13,6 +15,7 @@ import {
   Breadcrumb,
   Space,
   Alert,
+  Tooltip,
   message,
 } from "antd";
 import {
@@ -31,11 +34,22 @@ import { useNavigate } from "react-router-dom";
 const { Option } = Select;
 const { Title, Text, Paragraph } = Typography;
 
+const formatBuddhistDate = (value) => {
+  const date = dayjs(value);
+  if (!date.isValid()) return "-";
+  const buddhistYear = date.year() + 543;
+  const monthName = date.locale("th").format("MMMM");
+  return `${date.format("D")} ${monthName} ${buddhistYear}`;
+};
+
 const SubjectSelectionModal = ({
   isModalVisible,
   handleCancel,
   onSubjectSelected,
   classStudentCount = 0,
+  resolveSubcategoryBlock,
+  buildRuleBlockMessage,
+  activeSlot = null,
 }) => {
   const [levels, setLevels] = useState([]);
   const [selectedLevel, setSelectedLevel] = useState(null);
@@ -164,13 +178,39 @@ const SubjectSelectionModal = ({
       selectedRecord.subject.student_max < classStudentCount
     )
       return false;
+    if (
+      typeof resolveSubcategoryBlock === "function" &&
+      selectedRecord.subcategory?.subcategory_en
+    ) {
+      const duration =
+        selectedRecord.subject?.slot && selectedRecord.subject.slot > 0
+          ? selectedRecord.subject.slot
+          : 1;
+      const blockInfo = resolveSubcategoryBlock(
+        selectedRecord.subcategory.subcategory_en,
+        duration
+      );
+      if (blockInfo) return false;
+    }
     return true;
-  }, [selectedRecord, classStudentCount]);
+  }, [selectedRecord, classStudentCount, resolveSubcategoryBlock]);
 
-  const handleSubjectClick = (subject, category, subcategory) => {
+  const handleSubjectClick = (
+    subject,
+    category,
+    subcategory,
+    blockInfo,
+    blockMessage
+  ) => {
     const subjectOpen = isSubjectOpen(subject, category, subcategory);
     const capacityExceeded =
       classStudentCount > 0 && subject.student_max < classStudentCount;
+    const blockedByRule = !!blockInfo;
+
+    if (blockedByRule)
+      return message.warning(
+        blockMessage || "หัวข้อย่อยนี้ปิดรับในช่วงเวลาที่เลือก"
+      );
 
     if (!subjectOpen) return message.warning("คอร์สนี้ปิดรับแล้ว");
     if (capacityExceeded)
@@ -191,7 +231,7 @@ const SubjectSelectionModal = ({
             subcategory_th: subcategory.subcategory_th,
           }
         : null,
-      isAvailable: subjectOpen && !capacityExceeded,
+      isAvailable: subjectOpen && !capacityExceeded && !blockedByRule,
     });
     setDrawerVisible(true);
   };
@@ -238,6 +278,25 @@ const SubjectSelectionModal = ({
         ]}
       >
         {/* ---------- Tabs ---------- */}
+        {activeSlot && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message={
+              <div>
+                <div>
+                  กำลังเลือกวิชาสำหรับวันที่{" "}
+                  <strong>
+                    {activeSlot.displayDate ||
+                      formatBuddhistDate(activeSlot.dateValue)}
+                  </strong>
+                </div>
+                <div>ช่วงเวลา: {activeSlot.slotLabel}</div>
+              </div>
+            }
+          />
+        )}
         <Tabs
           activeKey={selectedLevel}
           onChange={handleLevelChange}
@@ -330,21 +389,44 @@ const SubjectSelectionModal = ({
                       >
                         {sub.subjects.map((subject) => {
                           const subjectImage = resolveImageUrl(subject.image);
+                          const subjectOpen = isSubjectOpen(subject, cat, sub);
+                          const capacityExceeded =
+                            classStudentCount > 0 &&
+                            subject.student_max < classStudentCount;
+                          const durationSlots =
+                            subject.slot && subject.slot > 0 ? subject.slot : 1;
+                          const blockInfo =
+                            typeof resolveSubcategoryBlock === "function"
+                              ? resolveSubcategoryBlock(
+                                  sub.subcategory_en,
+                                  durationSlots
+                                )
+                              : null;
+                          const blockMessage =
+                            blockInfo && typeof buildRuleBlockMessage === "function"
+                              ? buildRuleBlockMessage(
+                                  blockInfo,
+                                  sub.subcategory_th || sub.subcategory_en
+                                )
+                              : null;
+                          const blockedByRule = !!blockInfo;
                           const disabled =
-                            subject.isActive === false ||
-                            (classStudentCount > 0 &&
-                              subject.student_max < classStudentCount);
+                            !subjectOpen || capacityExceeded || blockedByRule;
                           const isSelected = selectedSubject === subject.code;
-                          const hours =
-                            (subject.slot && subject.slot > 0 ? subject.slot : 1) * 3;
+                          const hours = durationSlots * 3;
 
                           return (
                             <Card
                               key={subject.code}
                               hoverable
                               onClick={() =>
-                                !disabled &&
-                                handleSubjectClick(subject, cat, sub)
+                                handleSubjectClick(
+                                  subject,
+                                  cat,
+                                  sub,
+                                  blockInfo,
+                                  blockMessage
+                                )
                               }
                               style={{
                                 width: 180,
@@ -421,9 +503,24 @@ const SubjectSelectionModal = ({
                                       </Tag>
                                       <Tag color="geekblue">{hours} ชม.</Tag>
                                     </Space>
+                                    {blockMessage && (
+                                      <Paragraph
+                                        type="danger"
+                                        style={{ fontSize: 12, marginTop: 8 }}
+                                      >
+                                        {blockMessage}
+                                      </Paragraph>
+                                    )}
                                   </div>
                                 }
                               />
+                              {blockedByRule && (
+                                <Tooltip title={blockMessage}>
+                                  <Tag color="red" style={{ marginTop: 8 }}>
+                                    ช่วงนี้ปิดรับ
+                                  </Tag>
+                                </Tooltip>
+                              )}
                             </Card>
                           );
                         })}

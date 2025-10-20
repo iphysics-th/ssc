@@ -1,17 +1,36 @@
-import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
+import React, {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from 'react';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import 'dayjs/locale/th';
-import { Alert, Button, Col, message, Row } from 'antd';
+import { Alert, Button, Col, message, Row, Tag, Tooltip } from 'antd';
 import { Calendar } from '../../../lib/react-calendar-kit';
 import { useNavigate } from 'react-router-dom';
 import Protected from '../../../hooks/userProtected';
 import { useFormData } from '../../../contexts/FormDataContext';
-import { useGetConfirmedReservationsQuery } from '../reservationApiSlice';
+import {
+  useGetConfirmedReservationsQuery,
+  useGetReservationRulesQuery,
+} from '../reservationApiSlice';
 import '../../../css/Reservation/CourseSelection.css';
 
 dayjs.extend(isBetween);
 dayjs.locale('th');
+
+const WEEKDAY_LABELS = {
+  0: 'วันอาทิตย์',
+  1: 'วันจันทร์',
+  2: 'วันอังคาร',
+  3: 'วันพุธ',
+  4: 'วันพฤหัสบดี',
+  5: 'วันศุกร์',
+  6: 'วันเสาร์',
+};
 
 const formatBuddhistDate = (value) => {
   const date = dayjs(value);
@@ -21,22 +40,36 @@ const formatBuddhistDate = (value) => {
   return `${date.format('D')} ${month} ${buddhistYear}`;
 };
 
+const formatDisplayRange = (start, end) =>
+  `${start.locale('th').format('D MMM YYYY')} – ${end
+    .locale('th')
+    .format('D MMM YYYY')}`;
+
 const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
   const navigate = useNavigate();
   const { formData, updateFormData } = useFormData();
+
+  const { data: reservationRules = [] } = useGetReservationRulesQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
+  const { data: availabilityData } = useGetConfirmedReservationsQuery();
 
   const numberOfDays = useMemo(() => {
     const parsed = parseFloat(formData.numberOfDays);
     return Number.isNaN(parsed) ? 1 : parsed;
   }, [formData.numberOfDays]);
 
-  const initialDates = (formData.selectedDates || []).map((date) => dayjs(date));
-  // This state is now ONLY for your own UI (details panel / selected highlight logic),
-  // not for controlling the calendar panel/month.
-  const [calendarValue, setCalendarValue] = useState(initialDates[0] || dayjs());
-  const [selectedDates, setSelectedDates] = useState(initialDates);
+  const initialDates = useMemo(
+    () => (formData.selectedDates || []).map((date) => dayjs(date)),
+    [formData.selectedDates],
+  );
 
-  const { data: availabilityData } = useGetConfirmedReservationsQuery();
+  const [calendarValue, setCalendarValue] = useState(
+    initialDates[0] && initialDates[0].isValid() ? initialDates[0] : dayjs(),
+  );
+  const [selectedDates, setSelectedDates] = useState(
+    initialDates.filter((d) => d.isValid()),
+  );
 
   const confirmedReservations = useMemo(() => {
     if (!availabilityData?.confirmed) return [];
@@ -54,52 +87,187 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
     }));
   }, [availabilityData]);
 
+  const processedRules = useMemo(() => {
+    const summary = {
+      weekdayRules: new Set(),
+      blockedRanges: [],
+      subcategoryRanges: [],
+    };
+
+    const rules = Array.isArray(reservationRules) ? reservationRules : [];
+    rules.forEach((rule) => {
+      if (!rule?.type) return;
+
+      if (rule.type === 'weekday' && Array.isArray(rule.weekdays)) {
+        rule.weekdays.forEach((day) => {
+          if (typeof day === 'number' && day >= 0 && day <= 6) {
+            summary.weekdayRules.add(day);
+          }
+        });
+      }
+
+      if (rule.type === 'date_range') {
+        const start = rule.startDate ? dayjs(rule.startDate).startOf('day') : null;
+        const end = rule.endDate ? dayjs(rule.endDate).endOf('day') : null;
+        if (start?.isValid() && end?.isValid() && !end.isBefore(start)) {
+          summary.blockedRanges.push({
+            start,
+            end,
+            note: rule.note || '',
+          });
+        }
+      }
+
+      if (rule.type === 'subcategory') {
+        const start = rule.startDate ? dayjs(rule.startDate).startOf('day') : null;
+        const end = rule.endDate ? dayjs(rule.endDate).endOf('day') : null;
+        if (start?.isValid() && end?.isValid() && !end.isBefore(start)) {
+          summary.subcategoryRanges.push({
+            start,
+            end,
+            subcategory: rule.subcategory_en || '-',
+            note: rule.note || '',
+          });
+        }
+      }
+    });
+
+    return summary;
+  }, [reservationRules]);
+
+  const getDateBlockers = useCallback(
+    (value) => {
+      const blockers = [];
+      if (!value?.isValid?.()) return blockers;
+
+      if (processedRules.weekdayRules.has(value.day())) {
+        blockers.push({
+          type: 'weekday',
+          message: `ระบบไม่เปิดให้จองใน${WEEKDAY_LABELS[value.day()] || 'วันนี้'}`,
+        });
+      }
+
+      processedRules.blockedRanges.forEach((range) => {
+        if (value.isBetween(range.start, range.end, null, '[]')) {
+          blockers.push({
+            type: 'date_range',
+            message: `ช่วงวันที่ ${formatDisplayRange(range.start, range.end)} ปิดรับการจอง${
+              range.note ? ` (${range.note})` : ''
+            }`,
+          });
+        }
+      });
+
+      return blockers;
+    },
+    [processedRules],
+  );
+
+  const getSubcategoryNotesForDate = useCallback(
+    (value) => {
+      if (!value?.isValid?.()) return [];
+      return processedRules.subcategoryRanges
+        .filter((range) => value.isBetween(range.start, range.end, null, '[]'))
+        .map((range) => ({
+          subcategory: range.subcategory,
+          note: range.note,
+        }));
+    },
+    [processedRules],
+  );
+
+  const ruleSummaryList = useMemo(() => {
+    const items = [];
+    const weekdayList = Array.from(processedRules.weekdayRules);
+    if (weekdayList.length) {
+      const dayNames = weekdayList
+        .sort((a, b) => a - b)
+        .map((idx) => WEEKDAY_LABELS[idx])
+        .filter(Boolean)
+        .join(', ');
+      if (dayNames) {
+        items.push(`ระบบไม่เปิดให้จองใน${dayNames}`);
+      }
+    }
+
+    processedRules.blockedRanges.forEach((range) => {
+      items.push(
+        `ปิดรับช่วง ${formatDisplayRange(range.start, range.end)}${
+          range.note ? ` (${range.note})` : ''
+        }`,
+      );
+    });
+
+    processedRules.subcategoryRanges.forEach((range) => {
+      items.push(
+        `หัวข้อย่อย ${range.subcategory} ปิดรับระหว่าง ${formatDisplayRange(
+          range.start,
+          range.end,
+        )}${range.note ? ` (${range.note})` : ''}`,
+      );
+    });
+
+    if (!items.length) {
+      items.push('กรุณาเลือกวันที่ที่สะดวก และตรวจสอบสถานะปฏิทินก่อนยืนยันการจอง');
+    }
+
+    return items;
+  }, [processedRules]);
+
   const onSelect = (newValue) => {
-    const day = newValue.day(); // 0=Sun,6=Sat
     const dateOnly = newValue.startOf('day');
-    const blockedStart = dayjs('2025-08-06');
-    const blockedEnd = dayjs('2025-09-30');
+    const blockers = getDateBlockers(dateOnly);
 
-    if (dateOnly.isBetween(blockedStart, blockedEnd, null, '[]')) {
-      message.warning('ไม่สามารถเลือกวันที่ระหว่างวันที่ 6 สิงหาคม ถึง 30 กันยายนได้');
+    if (blockers.length) {
+      message.warning(blockers[0]?.message || 'ไม่สามารถเลือกวันดังกล่าวได้');
       return;
     }
 
-    if (day !== 0 && day !== 6) {
-      message.warning('สามารถเลือกได้เฉพาะวันเสาร์และวันอาทิตย์เท่านั้น');
-      return;
-    }
-
-    // Keep for your details panel & selected styling
     setCalendarValue(newValue);
 
     const dates = [dateOnly];
     const requiredDays = Math.ceil(numberOfDays);
     for (let i = 1; i < requiredDays; i++) {
-      dates.push(dateOnly.add(i, 'day'));
+      const nextDate = dateOnly.add(i, 'day');
+      const extraBlockers = getDateBlockers(nextDate);
+      if (extraBlockers.length) {
+        message.warning(
+          `${formatBuddhistDate(nextDate)}: ${
+            extraBlockers[0]?.message || 'ไม่สามารถเลือกวันดังกล่าวได้'
+          }`,
+        );
+        return;
+      }
+      dates.push(nextDate);
     }
     setSelectedDates(dates);
   };
 
   const dateCellRender = (value) => {
     const formatValue = value.format('YYYY-MM-DD');
-    const day = value.day();
-    const isWeekend = day === 0 || day === 6;
-
     const confirmed = confirmedReservations.filter((r) => r.dates.includes(formatValue));
     const processed = processedReservations.filter((r) => r.dates.includes(formatValue));
     const isSelected = selectedDates.some((date) => date.isSame(value, 'day'));
+    const blockers = getDateBlockers(value);
+    const subcategoryNotes = getSubcategoryNotesForDate(value);
 
-    const cellStyle = isWeekend
-      ? {}
-      : { opacity: 0.4, pointerEvents: 'none', cursor: 'not-allowed' };
+    const disabledStyle =
+      blockers.length > 0
+        ? { opacity: 0.35, pointerEvents: 'none', cursor: 'not-allowed' }
+        : {};
 
-    return (
-      <div style={cellStyle}>
+    const cellBody = (
+      <div style={{ ...disabledStyle, position: 'relative' }}>
         {confirmed.map((r, i) => (
           <div
             key={`c-${i}`}
-            style={{ backgroundColor: '#E86447', color: 'white', marginBottom: 2, padding: '2px 4px', borderRadius: 4 }}
+            style={{
+              backgroundColor: '#E86447',
+              color: 'white',
+              marginBottom: 2,
+              padding: '2px 4px',
+              borderRadius: 4,
+            }}
           >
             {r.school}
           </div>
@@ -107,17 +275,64 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
         {processed.map((r, i) => (
           <div
             key={`p-${i}`}
-            style={{ backgroundColor: '#B0B0B0', color: 'white', marginBottom: 2, padding: '2px 4px', borderRadius: 4 }}
+            style={{
+              backgroundColor: '#B0B0B0',
+              color: 'white',
+              marginBottom: 2,
+              padding: '2px 4px',
+              borderRadius: 4,
+            }}
           >
             {r.school}
           </div>
         ))}
         {isSelected && (
-          <div style={{ backgroundColor: '#1890ff', color: 'white', padding: '2px 4px', borderRadius: 4 }}>
+          <div
+            style={{
+              backgroundColor: '#1890ff',
+              color: 'white',
+              padding: '2px 4px',
+              borderRadius: 4,
+            }}
+          >
             {value.date()}
           </div>
         )}
+        {!isSelected && !confirmed.length && !processed.length && blockers.length > 0 && (
+          <Tag color="red" style={{ marginTop: 4 }}>
+            ปิดรับ
+          </Tag>
+        )}
+        {subcategoryNotes.map((note, idx) => (
+          <Tag key={`sub-${idx}`} color="gold" style={{ marginTop: 4 }}>
+            {note.subcategory}
+          </Tag>
+        ))}
       </div>
+    );
+
+    if (!blockers.length && !subcategoryNotes.length) {
+      return cellBody;
+    }
+
+    const tooltipContent = (
+      <div>
+        {blockers.map((blocker, idx) => (
+          <div key={`block-${idx}`}>{blocker.message}</div>
+        ))}
+        {subcategoryNotes.map((note, idx) => (
+          <div key={`sub-note-${idx}`}>
+            หัวข้อ {note.subcategory}
+            {note.note ? `: ${note.note}` : ' ปิดรับการจองในช่วงนี้'}
+          </div>
+        ))}
+      </div>
+    );
+
+    return (
+      <Tooltip placement="top" title={tooltipContent}>
+        {cellBody}
+      </Tooltip>
     );
   };
 
@@ -155,13 +370,11 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
               message={
                 <div>
                   <strong>📌 หมายเหตุ:</strong>
-                  <br />
-                  เวลาเรียนสามารถเลือกได้เฉพาะ:
-                  <ol style={{ paddingLeft: 20, marginBottom: 0 }}>
-                    <li>วันเสาร์หรือวันอาทิตย์</li>
-                    <li>ไม่อยู่ในช่วงวันที่ 6 สิงหาคม - 30 กันยายน</li>
-                    <li>ไม่ตรงกับช่วงวันหยุดยาว เช่น ปีใหม่ หรือสงกรานต์</li>
-                  </ol>
+                  <ul style={{ paddingLeft: 20, marginBottom: 0 }}>
+                    {ruleSummaryList.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
                 </div>
               }
               style={{ marginBottom: 16 }}
@@ -178,7 +391,6 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
 
             <div className="calendar-scroll-wrapper">
               <div className="calendar-fixed-width">
-                {/* ✅ Uncontrolled calendar: remove `value`, use `defaultValue` only */}
                 <Calendar
                   defaultValue={calendarValue}
                   onSelect={onSelect}
@@ -218,6 +430,12 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
                 </span>{' '}
                 - ช่วงเวลาที่คุณเลือก
               </span>
+              <span>
+                <span className="legend-item" style={{ backgroundColor: '#ff4d4f' }}>
+                  ปิดรับ
+                </span>{' '}
+                - ตามกฎที่ผู้ดูแลตั้งค่า
+              </span>
             </div>
           </div>
 
@@ -246,3 +464,4 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
 
 DateSelection.displayName = 'SelectDate';
 export default DateSelection;
+

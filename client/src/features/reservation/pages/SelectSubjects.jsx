@@ -7,16 +7,19 @@ import React, {
   forwardRef,
 } from "react";
 import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
 import "dayjs/locale/th";
 import { Alert, Button, Card, Col, message, Row, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import Protected from "../../../hooks/userProtected";
 import { useFormData } from "../../../contexts/FormDataContext";
 import SubjectSelectionModal from "../components/SubjectModal";
+import { useGetReservationRulesQuery } from "../reservationApiSlice";
 import "../../../css/Reservation/CourseSelection.css";
 
 const { Paragraph, Title } = Typography;
 dayjs.locale("th");
+dayjs.extend(isBetween);
 
 const timeSlots = ["คาบเช้า (9:00 - 12:00)", "คาบบ่าย (13:00 - 16:00)"];
 
@@ -28,9 +31,15 @@ const formatBuddhistDate = (value) => {
   return `${date.format("D")} ${monthName} ${buddhistYear}`;
 };
 
+const formatDisplayRange = (start, end) =>
+  `${start.locale("th").format("D MMM YYYY")} – ${end.locale("th").format("D MMM YYYY")}`;
+
 const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
   const navigate = useNavigate();
   const { formData, updateFormData } = useFormData();
+  const { data: reservationRules = [] } = useGetReservationRulesQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
   const numberOfDays = useMemo(() => {
     const parsed = parseFloat(formData.numberOfDays);
@@ -62,6 +71,28 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
       return { slotIndex, dateValue, displayDate, slotLabel };
     });
   }, [numberOfSlots, selectedDates]);
+
+  const subcategoryRuleMap = useMemo(() => {
+    const map = new Map();
+    const rules = Array.isArray(reservationRules) ? reservationRules : [];
+    rules
+      .filter((rule) => rule?.type === "subcategory")
+      .forEach((rule) => {
+        const start = rule.startDate ? dayjs(rule.startDate).startOf("day") : null;
+        const end = rule.endDate ? dayjs(rule.endDate).endOf("day") : null;
+        if (!start?.isValid() || !end?.isValid() || end.isBefore(start)) return;
+        const key = rule.subcategory_en;
+        if (!key) return;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push({
+          start,
+          end,
+          note: rule.note || "",
+          rule,
+        });
+      });
+    return map;
+  }, [reservationRules]);
 
   const normaliseClassEntry = useCallback(
     (savedEntry, index) => {
@@ -116,6 +147,59 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
   const [activeClassIndex, setActiveClassIndex] = useState(null);
   const [activeSlotIndex, setActiveSlotIndex] = useState(null);
 
+  const resolveSubcategoryBlock = useCallback(
+    (subcategoryKey, durationRaw) => {
+      if (activeSlotIndex === null || activeSlotIndex === undefined) return null;
+      if (!subcategoryKey) return null;
+      const ruleEntries = subcategoryRuleMap.get(subcategoryKey);
+      if (!ruleEntries?.length) return null;
+
+      const duration = Math.max(1, Number(durationRaw) || 1);
+      for (let offset = 0; offset < duration; offset++) {
+        const definition = slotDefinitions[activeSlotIndex + offset];
+        if (!definition?.dateValue) {
+          return { type: "missing_date", slotIndex: activeSlotIndex + offset };
+        }
+        const day = dayjs(definition.dateValue);
+        if (!day.isValid()) continue;
+        const conflict = ruleEntries.find((entry) =>
+          day.isBetween(entry.start, entry.end, null, "[]")
+        );
+        if (conflict) {
+          return {
+            type: "rule",
+            range: conflict,
+            date: day,
+          };
+        }
+      }
+      return null;
+    },
+    [activeSlotIndex, slotDefinitions, subcategoryRuleMap]
+  );
+
+  const buildRuleBlockMessage = useCallback(
+    (info, subcategoryLabel) => {
+      if (!info) return "";
+      const label = subcategoryLabel ? ` ${subcategoryLabel}` : "";
+      if (info.type === "missing_date") {
+        return `หัวข้อย่อย${label} ต้องการช่วงเวลาต่อเนื่องที่ยังไม่ได้เลือก`;
+      }
+      if (info.type === "rule" && info.range?.start && info.range?.end) {
+        const rangeText = formatDisplayRange(info.range.start, info.range.end);
+        const note = info.range.note ? ` (${info.range.note})` : "";
+        return `หัวข้อย่อย${label} ปิดรับระหว่าง ${rangeText}${note}`;
+      }
+      return `หัวข้อย่อย${label} ไม่สามารถเลือกได้ในช่วงเวลานี้`;
+    },
+    []
+  );
+
+  const activeSlot = useMemo(() => {
+    if (activeSlotIndex === null || activeSlotIndex === undefined) return null;
+    return slotDefinitions[activeSlotIndex] || null;
+  }, [activeSlotIndex, slotDefinitions]);
+
   const studentsPerClass = useMemo(() => {
     const saved = Array.isArray(formData.studentsPerClass)
       ? formData.studentsPerClass
@@ -153,62 +237,71 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
   };
 
   const handleSubjectSelected = (selection) => {
-  if (activeClassIndex === null || activeSlotIndex === null) return;
+    if (activeClassIndex === null || activeSlotIndex === null) return;
 
-  setClassSubjects((prev) => {
-    const next = [...prev];
-    const currentEntry = next[activeClassIndex] || normaliseClassEntry(null, activeClassIndex);
-
-    // Clone existing slots or create fresh from definitions
-    const slots = slotDefinitions.map((definition, i) => {
-      const existing = currentEntry.slots?.[i];
-      return {
-        slotIndex: i,
-        date: definition.dateValue,
-        slot: definition.slotLabel,
-        ...(existing || {}),
-      };
-    });
-
-    // 🔹 FIXED: use slot count (not duration)
-    const duration = Number(selection.subject?.slot || 1);
-    const priceValue = Number(selection.subject?.price);
-
-    // 🔹 Apply selected subject to active slot + next (duration - 1) slots
-    for (let offset = 0; offset < duration; offset++) {
-      const targetSlotIndex = activeSlotIndex + offset;
-      if (targetSlotIndex >= slots.length) break;
-
-      const definition = slotDefinitions[targetSlotIndex];
-      slots[targetSlotIndex] = {
-        ...slots[targetSlotIndex],
-        slotIndex: targetSlotIndex,
-        date: definition?.dateValue || null,
-        slot: definition?.slotLabel || null,
-        subject: selection.subject,
-        code: selection.subject?.code || null,
-        name_th: selection.subject?.name_th || null,
-        level: selection.level || null,
-        levelLabel: selection.levelLabel || null,
-        category: selection.category || null,
-        categoryLabel: selection.categoryLabel || null,
-        subcategory: selection.subcategory || null,
-        subcategoryLabel: selection.subcategoryLabel || null,
-        price: Number.isFinite(priceValue) ? priceValue : null,
-      };
+    const duration = Math.max(1, Number(selection.subject?.slot) || 1);
+    const ruleBlock = resolveSubcategoryBlock(selection.subcategory, duration);
+    if (ruleBlock) {
+      message.warning(
+        buildRuleBlockMessage(
+          ruleBlock,
+          selection.subcategoryLabel || selection.subcategory
+        )
+      );
+      return;
     }
 
-    next[activeClassIndex] = {
-      ...currentEntry,
-      classNumber: currentEntry.classNumber || activeClassIndex + 1,
-      slots,
-    };
+    setClassSubjects((prev) => {
+      const next = [...prev];
+      const currentEntry =
+        next[activeClassIndex] || normaliseClassEntry(null, activeClassIndex);
 
-    return next;
-  });
+      const slots = slotDefinitions.map((definition, i) => {
+        const existing = currentEntry.slots?.[i];
+        return {
+          slotIndex: i,
+          date: definition.dateValue,
+          slot: definition.slotLabel,
+          ...(existing || {}),
+        };
+      });
 
-  closeModal();
-};
+      const priceValue = Number(selection.subject?.price);
+
+      for (let offset = 0; offset < duration; offset++) {
+        const targetSlotIndex = activeSlotIndex + offset;
+        if (targetSlotIndex >= slots.length) break;
+
+        const definition = slotDefinitions[targetSlotIndex];
+        slots[targetSlotIndex] = {
+          ...slots[targetSlotIndex],
+          slotIndex: targetSlotIndex,
+          date: definition?.dateValue || null,
+          slot: definition?.slotLabel || null,
+          subject: selection.subject,
+          code: selection.subject?.code || null,
+          name_th: selection.subject?.name_th || null,
+          level: selection.level || null,
+          levelLabel: selection.levelLabel || null,
+          category: selection.category || null,
+          categoryLabel: selection.categoryLabel || null,
+          subcategory: selection.subcategory || null,
+          subcategoryLabel: selection.subcategoryLabel || null,
+          price: Number.isFinite(priceValue) ? priceValue : null,
+        };
+      }
+
+      next[activeClassIndex] = {
+        ...currentEntry,
+        classNumber: currentEntry.classNumber || activeClassIndex + 1,
+        slots,
+      };
+
+      return next;
+    });
+
+    closeModal();
+  };
 
 
   const validateSelections = () => {
@@ -457,10 +550,13 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
             ? studentsPerClass[activeClassIndex] || 0
             : formData.numberOfStudents || 0
         }
+        resolveSubcategoryBlock={resolveSubcategoryBlock}
+        buildRuleBlockMessage={buildRuleBlockMessage}
+        activeSlot={activeSlot}
         initialSelection={
           activeClassIndex !== null &&
-            activeSlotIndex !== null &&
-            classSubjects[activeClassIndex]?.slots?.[activeSlotIndex]
+          activeSlotIndex !== null &&
+          classSubjects[activeClassIndex]?.slots?.[activeSlotIndex]
             ? {
               level:
                 classSubjects[activeClassIndex].slots[activeSlotIndex].level,
