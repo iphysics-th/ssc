@@ -12,11 +12,13 @@ import {
   Drawer,
   Breadcrumb,
   Space,
+  Alert,
   message,
 } from "antd";
 import {
   BookOutlined,
   AppstoreOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
 import {
   useGetSubjectLevelsQuery,
@@ -79,10 +81,23 @@ const SubjectSelectionModal = ({
     setDrawerVisible(false);
   };
 
-  const isSubjectOpen = (subject) =>
-    subject && subject.isActive !== false &&
-    subject.isCategoryActive !== false &&
-    subject.isSubcategoryActive !== false;
+  const isCategoryOpen = (category) => !category || category.isActive !== false;
+  const isSubcategoryOpen = (subcategory, category) => {
+    if (!subcategory) return isCategoryOpen(category);
+    return (
+      isCategoryOpen(category) &&
+      subcategory.isActive !== false &&
+      subcategory.isCategoryActive !== false
+    );
+  };
+  const isSubjectOpen = (subject, category, subcategory) =>
+    !!(
+      subject &&
+      isSubcategoryOpen(subcategory, category) &&
+      subject.isActive !== false &&
+      subject.isCategoryActive !== false &&
+      subject.isSubcategoryActive !== false
+    );
 
   const handleLevelChange = async (levelKey) => {
     setSelectedLevel(levelKey);
@@ -123,8 +138,7 @@ const SubjectSelectionModal = ({
     .map((cat) => ({
       ...cat,
       subcategories: cat.subcategories.filter(
-        (sub) =>
-          !selectedSubcategory || sub.subcategory_en === selectedSubcategory
+        (sub) => !selectedSubcategory || sub.subcategory_en === selectedSubcategory
       ),
     }));
 
@@ -154,7 +168,7 @@ const SubjectSelectionModal = ({
   }, [selectedRecord, classStudentCount]);
 
   const handleSubjectClick = (subject, category, subcategory) => {
-    const subjectOpen = isSubjectOpen(subject);
+    const subjectOpen = isSubjectOpen(subject, category, subcategory);
     const capacityExceeded =
       classStudentCount > 0 && subject.student_max < classStudentCount;
 
@@ -165,14 +179,18 @@ const SubjectSelectionModal = ({
     setSelectedSubject(subject.code);
     setSelectedSubjectDetail({
       ...subject,
-      categoryInfo: {
-        category_en: category.category_en,
-        category_th: category.category_th,
-      },
-      subcategoryInfo: {
-        subcategory_en: subcategory.subcategory_en,
-        subcategory_th: subcategory.subcategory_th,
-      },
+      categoryInfo: category
+        ? {
+            category_en: category.category_en,
+            category_th: category.category_th,
+          }
+        : null,
+      subcategoryInfo: subcategory
+        ? {
+            subcategory_en: subcategory.subcategory_en,
+            subcategory_th: subcategory.subcategory_th,
+          }
+        : null,
       isAvailable: subjectOpen && !capacityExceeded,
     });
     setDrawerVisible(true);
@@ -219,7 +237,7 @@ const SubjectSelectionModal = ({
           </Button>,
         ]}
       >
-        {/* ------------------ Tabs ------------------ */}
+        {/* ---------- Tabs ---------- */}
         <Tabs
           activeKey={selectedLevel}
           onChange={handleLevelChange}
@@ -230,21 +248,20 @@ const SubjectSelectionModal = ({
           }))}
         />
 
-        {/* 🔹 Filter dropdowns at the top inside tab */}
+        {/* ✅ Added filter dropdowns inside tab */}
         {structuredSubjects.length > 0 && (
           <div
             style={{
               display: "flex",
-              flexWrap: "wrap",
               gap: 12,
               marginBottom: 16,
-              justifyContent: "flex-start",
+              flexWrap: "wrap",
             }}
           >
             <Select
               allowClear
               placeholder="กรองตามกลุ่มวิชา"
-              style={{ minWidth: 200 }}
+              style={{ minWidth: 220 }}
               value={selectedCategory}
               onChange={(v) => {
                 setSelectedCategory(v);
@@ -261,7 +278,7 @@ const SubjectSelectionModal = ({
             <Select
               allowClear
               placeholder="กรองตามสาขา"
-              style={{ minWidth: 200 }}
+              style={{ minWidth: 220 }}
               value={selectedSubcategory}
               onChange={(v) => setSelectedSubcategory(v)}
             >
@@ -280,7 +297,7 @@ const SubjectSelectionModal = ({
           </div>
         )}
 
-        {/* ------------------ Subject Cards ------------------ */}
+        {/* ---------- Subject Cards ---------- */}
         <Spin spinning={loading}>
           {filteredStructure.length ? (
             <div style={{ maxHeight: "65vh", overflowY: "auto", paddingRight: 10 }}>
@@ -339,6 +356,7 @@ const SubjectSelectionModal = ({
                                   : "1px solid #e5e7eb",
                                 opacity: disabled ? 0.6 : 1,
                                 cursor: disabled ? "not-allowed" : "pointer",
+                                transition: "all 0.2s ease",
                               }}
                               cover={
                                 <div
@@ -421,7 +439,7 @@ const SubjectSelectionModal = ({
         </Spin>
       </Modal>
 
-      {/* ------------------ Drawer ------------------ */}
+      {/* ---------- Drawer ---------- */}
       <Drawer
         title={selectedSubjectDetail?.name_th || "รายละเอียดคอร์ส"}
         placement="right"
@@ -501,12 +519,16 @@ const SubjectSelectionModal = ({
               <Text style={{ color: "#475569" }}>ราคาต่อคอร์ส</Text>
             </div>
 
-            {/* ✅ Moved button here */}
+            {/* ✅ moved button here */}
             <Button
               type="primary"
               block
               size="large"
-              style={{ background: "#1677ff", fontWeight: 600, marginBottom: 20 }}
+              style={{
+                background: "#1677ff",
+                fontWeight: 600,
+                marginBottom: 20,
+              }}
               disabled={!selectedSubjectDetail?.isAvailable}
               onClick={() => {
                 if (handleOk()) {
@@ -518,11 +540,31 @@ const SubjectSelectionModal = ({
               เลือกคอร์สนี้
             </Button>
 
-            {/* Description moved below button */}
+            <Space direction="vertical" size={6} style={{ width: "100%" }}>
+              <Tag color="blue">
+                ระดับชั้น: {selectedSubjectDetail.level_th || "-"}
+              </Tag>
+              <Tag color="green">
+                จำนวนนักเรียนสูงสุด: {selectedSubjectDetail.student_max} คน
+              </Tag>
+              {selectedSubjectDetail.total_classroom && (
+                <Tag color="purple">
+                  จำนวนห้องที่เปิด: {selectedSubjectDetail.total_classroom} ห้อง
+                </Tag>
+              )}
+              <Tag color="geekblue">
+                ระยะเวลาเรียน:{" "}
+                {(selectedSubjectDetail.slot && selectedSubjectDetail.slot > 0
+                  ? selectedSubjectDetail.slot
+                  : 1) * 3}{" "}
+                ชั่วโมง
+              </Tag>
+            </Space>
+
             <Paragraph
               style={{
                 color: "#334155",
-                marginTop: 10,
+                marginTop: 20,
                 maxHeight: 240,
                 overflowY: "auto",
                 lineHeight: 1.6,
