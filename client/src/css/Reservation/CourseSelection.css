@@ -1,27 +1,26 @@
 /* ========== GENERAL STYLES ========== */
 
 .course-selection-container {
-  padding: 16px;
+  padding: clamp(12px, 2vw, 24px);
   max-width: 100%;
   margin: auto;
+  transition: all 0.3s ease;
 }
 
 .section {
-  margin-bottom: 32px; /* optimal for desktop layout */
+  margin-bottom: clamp(24px, 4vw, 40px);
 }
-
 
 .course-selection-container h2 {
   display: inline-block;
-  font-size: 20px;
+  font-size: clamp(18px, 2vw, 22px);
   text-align: left;
   color: #003b72;
   padding: 8px 16px;
   margin-bottom: 16px;
-  font-weight: 400;
+  font-weight: 500;
+  transition: font-size 0.3s ease;
 }
-
-
 
 .student-info-box {
   display: flex;
@@ -29,33 +28,39 @@
   align-items: center;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  gap: 8px;
+  transition: all 0.3s ease;
 }
 
 .student-info-box .count-box {
-  margin-right: 12px;
+  margin-right: 8px;
   padding: 8px 16px;
   background-color: #e6f7ff;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: clamp(14px, 1.8vw, 16px);
   text-align: center;
   min-width: 80px;
   margin-bottom: 10px;
-}
-
-.calendar-alert {
-  margin-bottom: 16px;
-  text-align: center;
+  transition: all 0.3s ease;
 }
 
 .legend-box {
-  text-align: center;
-  font-size: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  justify-content: start;
+  align-items: start;
+  text-align: left;
+  row-gap: 6px;
+  column-gap: 24px;
+  font-size: clamp(13px, 1.8vw, 14px);
   margin-top: 12px;
+  transition: all 0.3s ease;
 }
 
 .legend-box span {
   display: inline-block;
-  margin: 4px 10px;
+  margin: 4px 0;
+  text-align: left;
 }
 
 .legend-box .legend-item {
@@ -68,11 +73,7 @@
   width: 100%;
   margin-bottom: 16px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.subject-card .ant-btn {
-  width: 100%;
-  margin-bottom: 10px;
+  transition: all 0.3s ease;
 }
 
 .course-selection-footer {
@@ -80,45 +81,69 @@
   margin-top: 20px;
 }
 
-.reservation-number {
-  text-align: center;
-  margin-bottom: 12px;
-  font-size: 16px;
-  font-weight: bold;
-  color: #1890ff;
+/* ========== BREAKPOINTS ========== */
+
+/* 📱 Small Phones (<480px) */
+@media (max-width: 480px) {
+  .course-selection-container h2 {
+    font-size: 15px;
+  }
+
+  .legend-box {
+    grid-template-columns: 1fr;
+    font-size: 12px;
+  }
+
+  .student-info-box {
+    flex-direction: column;
+    gap: 6px;
+  }
 }
 
-.ant-modal .ant-input-number {
-  width: 100% !important;
-}
-
-/* ========== RESPONSIVE ========== */
-
-@media (max-width: 768px) {
+/* 📲 Large Phones (481–640px) */
+@media (max-width: 640px) {
   .student-info-box {
     flex-direction: column;
   }
 
+  .legend-box {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 💻 Tablets (641–992px) */
+@media (max-width: 992px) {
   .course-selection-container h2 {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   .legend-box {
-    font-size: 13px;
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
   }
 
-  .subject-card p {
-    font-size: 14px;
+  .section {
+    margin-bottom: 28px;
+  }
+
+  .subject-card {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
   }
 }
 
-/* ========== CALENDAR RESPONSIVENESS ========== */
-/* Outer scrollable wrapper */
+/* 🖥️ Desktop (≥993px) */
+@media (min-width: 993px) {
+  .legend-box {
+    grid-template-columns: repeat(2, auto);
+  }
+}
+
+/* ========== CALENDAR ========== */
 .calendar-scroll-wrapper {
   width: 100%;
+  overflow-x: auto;
+  transition: padding 0.3s ease;
 }
 
-/* Inner fixed-width calendar container */
 .calendar-fixed-width {
   width: 100%;
   max-width: 900px;
@@ -129,5 +154,12 @@
   .calendar-scroll-wrapper {
     margin: 0 -8px;
     padding: 0 8px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .course-selection-container .ant-col-xl-16 {
+    max-width: 85% !important;
+    flex: 0 0 85% !important;
   }
 }

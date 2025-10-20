@@ -347,7 +347,7 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
   return (
     <Protected>
       <Row justify="center" className="course-selection-container">
-        <Col xs={24} sm={22} md={20} lg={18} xl={16}>
+        <Col xs={24} sm={22} md={20} lg={20} xl={20} xxl={18}>
           <div className="section">
             <Title level={2} style={{ color: "#0f172a", marginBottom: 20 }}>
               3. เลือกวิชาที่ต้องการอบรม
@@ -550,13 +550,10 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
             ? studentsPerClass[activeClassIndex] || 0
             : formData.numberOfStudents || 0
         }
-        resolveSubcategoryBlock={resolveSubcategoryBlock}
-        buildRuleBlockMessage={buildRuleBlockMessage}
-        activeSlot={activeSlot}
         initialSelection={
           activeClassIndex !== null &&
-          activeSlotIndex !== null &&
-          classSubjects[activeClassIndex]?.slots?.[activeSlotIndex]
+            activeSlotIndex !== null &&
+            classSubjects[activeClassIndex]?.slots?.[activeSlotIndex]
             ? {
               level:
                 classSubjects[activeClassIndex].slots[activeSlotIndex].level,
@@ -572,6 +569,8 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
             }
             : null
         }
+        resolveSubcategoryBlock={resolveSubcategoryBlock}
+        buildRuleBlockMessage={buildRuleBlockMessage}
       />
     </Protected>
   );

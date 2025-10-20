@@ -87,6 +87,16 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
     }));
   }, [availabilityData]);
 
+  // Generate deterministic color from text
+  const colorFromText = (text) => {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = text.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const color = `hsl(${hash % 360}, 70%, 55%)`;
+    return color;
+  };
+
   const processedRules = useMemo(() => {
     const summary = {
       weekdayRules: new Set(),
@@ -125,7 +135,7 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
           summary.subcategoryRanges.push({
             start,
             end,
-            subcategory: rule.subcategory_en || '-',
+            subcategory: rule.subcategory_th || rule.subcategory_en || '-',
             note: rule.note || '',
           });
         }
@@ -171,6 +181,7 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
         .map((range) => ({
           subcategory: range.subcategory,
           note: range.note,
+          color: colorFromText(range.subcategory),
         }));
     },
     [processedRules],
@@ -217,14 +228,12 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
   const onSelect = (newValue) => {
     const dateOnly = newValue.startOf('day');
     const blockers = getDateBlockers(dateOnly);
-
     if (blockers.length) {
       message.warning(blockers[0]?.message || 'ไม่สามารถเลือกวันดังกล่าวได้');
       return;
     }
 
     setCalendarValue(newValue);
-
     const dates = [dateOnly];
     const requiredDays = Math.ceil(numberOfDays);
     for (let i = 1; i < requiredDays; i++) {
@@ -303,37 +312,26 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
             ปิดรับ
           </Tag>
         )}
-        {subcategoryNotes.map((note, idx) => (
-          <Tag key={`sub-${idx}`} color="gold" style={{ marginTop: 4 }}>
-            {note.subcategory}
-          </Tag>
-        ))}
-      </div>
-    );
-
-    if (!blockers.length && !subcategoryNotes.length) {
-      return cellBody;
-    }
-
-    const tooltipContent = (
-      <div>
-        {blockers.map((blocker, idx) => (
-          <div key={`block-${idx}`}>{blocker.message}</div>
-        ))}
-        {subcategoryNotes.map((note, idx) => (
-          <div key={`sub-note-${idx}`}>
-            หัวข้อ {note.subcategory}
-            {note.note ? `: ${note.note}` : ' ปิดรับการจองในช่วงนี้'}
+        {/* Subcategory color stripe */}
+        {subcategoryNotes.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 2 }}>
+            {subcategoryNotes.map((note, idx) => (
+              <div
+                key={`sub-${idx}`}
+                style={{
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: note.color,
+                }}
+                title={`หัวข้อ ${note.subcategory}${note.note ? `: ${note.note}` : ''}`}
+              />
+            ))}
           </div>
-        ))}
+        )}
       </div>
     );
 
-    return (
-      <Tooltip placement="top" title={tooltipContent}>
-        {cellBody}
-      </Tooltip>
-    );
+    return cellBody;
   };
 
   const handleNext = () => {
@@ -356,6 +354,17 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
     next: handleNext,
     prev: handleBack,
   }));
+
+  // Collect all subcategory colors for legend
+const subcategoryColorMap = useMemo(() => {
+  const map = {};
+  processedRules.subcategoryRanges.forEach((r) => {
+    const label = r.subcategory_th || r.subcategory || '-';
+    if (!map[label]) map[label] = colorFromText(label);
+  });
+  return map;
+}, [processedRules]);
+
 
   return (
     <Protected>
@@ -390,7 +399,10 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
             />
 
             <div className="calendar-scroll-wrapper">
-              <div className="calendar-fixed-width">
+              <div
+                className="calendar-fixed-width"
+                style={{ maxWidth: '100%', width: '900px', margin: '0 auto' }}
+              >
                 <Calendar
                   defaultValue={calendarValue}
                   onSelect={onSelect}
@@ -400,18 +412,7 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
               </div>
             </div>
 
-            {calendarValue && (
-              <div style={{ marginTop: 16 }}>
-                <h4>รายละเอียดการจองวันที่ {formatBuddhistDate(calendarValue)}</h4>
-                {[...confirmedReservations, ...processedReservations]
-                  .filter((r) => r.dates.includes(calendarValue.format('YYYY-MM-DD')))
-                  .map((r, i) => (
-                    <p key={i}>🏫 {r.school}</p>
-                  ))}
-              </div>
-            )}
-
-            <div className="legend-box">
+            <div className="legend-box" style={{ marginTop: 16 }}>
               <span>
                 <span className="legend-item" style={{ backgroundColor: '#E86447' }}>
                   ไม่ว่าง
@@ -436,6 +437,12 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
                 </span>{' '}
                 - ตามกฎที่ผู้ดูแลตั้งค่า
               </span>
+              {Object.entries(subcategoryColorMap).map(([label, color]) => (
+                <span key={label}>
+                  <span className="legend-item" style={{ backgroundColor: color }} />
+                  {' '}- {label}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -464,4 +471,3 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
 
 DateSelection.displayName = 'SelectDate';
 export default DateSelection;
-

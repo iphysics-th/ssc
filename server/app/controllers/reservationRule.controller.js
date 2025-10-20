@@ -11,12 +11,16 @@ const sanitizeRulePayload = (rule) => ({
   level_en: rule.level_en,
   category_en: rule.category_en,
   subcategory_en: rule.subcategory_en,
+  level_th: rule.level_th,
+  category_th: rule.category_th,
+  subcategory_th: rule.subcategory_th,
   note: rule.note || "",
   createdAt: rule.createdAt,
 });
 
+
 const validateRuleInput = (body) => {
-  const { type, weekdays, startDate, endDate, level_en, category_en, subcategory_en } = body;
+  const { type, weekdays, startDate, endDate, subcategory_en } = body;
 
   if (!type || !["weekday", "date_range", "subcategory"].includes(type)) {
     return "ประเภทการปิดรับไม่ถูกต้อง";
@@ -46,8 +50,8 @@ const validateRuleInput = (body) => {
   }
 
   if (type === "subcategory") {
-    if (!level_en || !category_en || !subcategory_en) {
-      return "กรุณาระบุระดับ กลุ่มวิชา และหัวข้อย่อย";
+    if (!subcategory_en) {
+      return "กรุณาเลือกหัวข้อย่อย";
     }
   }
 
