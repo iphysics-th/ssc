@@ -257,7 +257,7 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
         <Col xs={24} sm={22} md={20} lg={18} xl={16}>
           <div className="section">
             <Title level={2} style={{ color: "#0f172a", marginBottom: 20 }}>
-              5. เลือกวิชาที่ต้องการอบรม
+              3. เลือกวิชาที่ต้องการอบรม
             </Title>
 
             {slotDefinitions.length === 0 && (

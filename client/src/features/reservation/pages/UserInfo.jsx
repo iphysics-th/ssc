@@ -81,7 +81,7 @@ const UserInfoForm = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
         wrapperCol={{ span: 16 }}
         layout="horizontal"
       >
-      <h3>6. ข้อมูลส่วนตัวของผู้จอง</h3>
+      <h3>4. ข้อมูลส่วนตัวของผู้จอง</h3>
       <Form.Item
         label="คำนำหน้า"
         name="prefix"
@@ -140,7 +140,7 @@ const UserInfoForm = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
       >
         <Input />
       </Form.Item>
-      <h3>7. ข้อมูลของโรงเรียน</h3>
+      <h3>5. ข้อมูลของโรงเรียน</h3>
       <Form.Item
         label="โรงเรียน"
         name="school"
