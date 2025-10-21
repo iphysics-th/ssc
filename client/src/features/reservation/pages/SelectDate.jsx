@@ -145,11 +145,25 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
     return summary;
   }, [reservationRules]);
 
+  // ⬇️ 14-day advance blocking logic (block today and next 14 days)
+  const MIN_ADVANCE_DAYS = 14;
+  const today = dayjs().startOf('day');
+  const earliestAllowedDate = today.add(MIN_ADVANCE_DAYS + 1, 'day'); // +1 to include today
+
   const getDateBlockers = useCallback(
     (value) => {
       const blockers = [];
       if (!value?.isValid?.()) return blockers;
 
+      // 🔴 Block today and all dates within 14 days after today
+      if (value.isSame(today, 'day') || value.isBefore(earliestAllowedDate, 'day') && value.isAfter(today.subtract(1, 'day'), 'day')) {
+        blockers.push({
+          type: 'advance_rule',
+          message: 'ต้องจองล่วงหน้าอย่างน้อย 14 วัน',
+        });
+      }
+
+      // Existing weekday and rule-based blockers
       if (processedRules.weekdayRules.has(value.day())) {
         blockers.push({
           type: 'weekday',
@@ -161,17 +175,17 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
         if (value.isBetween(range.start, range.end, null, '[]')) {
           blockers.push({
             type: 'date_range',
-            message: `ช่วงวันที่ ${formatDisplayRange(range.start, range.end)} ปิดรับการจอง${
-              range.note ? ` (${range.note})` : ''
-            }`,
+            message: `ช่วงวันที่ ${formatDisplayRange(range.start, range.end)} ปิดรับการจอง${range.note ? ` (${range.note})` : ''
+              }`,
           });
         }
       });
 
       return blockers;
     },
-    [processedRules],
+    [processedRules, today, earliestAllowedDate],
   );
+
 
   const getSubcategoryNotesForDate = useCallback(
     (value) => {
@@ -203,8 +217,7 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
 
     processedRules.blockedRanges.forEach((range) => {
       items.push(
-        `ปิดรับช่วง ${formatDisplayRange(range.start, range.end)}${
-          range.note ? ` (${range.note})` : ''
+        `ปิดรับช่วง ${formatDisplayRange(range.start, range.end)}${range.note ? ` (${range.note})` : ''
         }`,
       );
     });
@@ -217,6 +230,9 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
         )}${range.note ? ` (${range.note})` : ''}`,
       );
     });
+
+    // Add info for 14-day rule
+    items.push('ต้องจองล่วงหน้าอย่างน้อย 14 วัน');
 
     if (!items.length) {
       items.push('กรุณาเลือกวันที่ที่สะดวก และตรวจสอบสถานะปฏิทินก่อนยืนยันการจอง');
@@ -241,8 +257,7 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
       const extraBlockers = getDateBlockers(nextDate);
       if (extraBlockers.length) {
         message.warning(
-          `${formatBuddhistDate(nextDate)}: ${
-            extraBlockers[0]?.message || 'ไม่สามารถเลือกวันดังกล่าวได้'
+          `${formatBuddhistDate(nextDate)}: ${extraBlockers[0]?.message || 'ไม่สามารถเลือกวันดังกล่าวได้'
           }`,
         );
         return;
@@ -265,8 +280,13 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
         ? { opacity: 0.35, pointerEvents: 'none', cursor: 'not-allowed' }
         : {};
 
+    const isAdvanceRestricted = blockers.some((b) => b.type === 'advance_rule');
+
     const cellBody = (
       <div style={{ ...disabledStyle, position: 'relative' }}>
+
+
+
         {confirmed.map((r, i) => (
           <div
             key={`c-${i}`}
@@ -312,6 +332,23 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
             ปิดรับ
           </Tag>
         )}
+        {isAdvanceRestricted && (
+          <div
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              backgroundColor: '#ff7875',
+              position: 'absolute',
+              top: 4,
+              right: 4,
+              opacity: 0.6,
+            }}
+            title="ต้องจองล่วงหน้าอย่างน้อย 14 วัน"
+          />
+        )}
+
+
         {/* Subcategory color stripe */}
         {subcategoryNotes.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 2 }}>
@@ -355,16 +392,14 @@ const DateSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) => 
     prev: handleBack,
   }));
 
-  // Collect all subcategory colors for legend
-const subcategoryColorMap = useMemo(() => {
-  const map = {};
-  processedRules.subcategoryRanges.forEach((r) => {
-    const label = r.subcategory_th || r.subcategory || '-';
-    if (!map[label]) map[label] = colorFromText(label);
-  });
-  return map;
-}, [processedRules]);
-
+  const subcategoryColorMap = useMemo(() => {
+    const map = {};
+    processedRules.subcategoryRanges.forEach((r) => {
+      const label = r.subcategory_th || r.subcategory || '-';
+      if (!map[label]) map[label] = colorFromText(label);
+    });
+    return map;
+  }, [processedRules]);
 
   return (
     <Protected>
@@ -390,11 +425,10 @@ const subcategoryColorMap = useMemo(() => {
             />
 
             <Alert
-              message={`คุณเลือกวันที่: ${
-                selectedDates.length
-                  ? selectedDates.map((date) => formatBuddhistDate(date)).join(', ')
-                  : '-'
-              }`}
+              message={`คุณเลือกวันที่: ${selectedDates.length
+                ? selectedDates.map((date) => formatBuddhistDate(date)).join(', ')
+                : '-'
+                }`}
               style={{ marginBottom: 16 }}
             />
 
@@ -436,6 +470,23 @@ const subcategoryColorMap = useMemo(() => {
                   ปิดรับ
                 </span>{' '}
                 - ตามกฎที่ผู้ดูแลตั้งค่า
+              </span>
+              <span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 8 }}>
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: '#ff7875',
+                      display: 'inline-block',
+                      marginRight: 6,
+                      opacity: 0.8,
+                    }}
+                  />
+                  ต้องจองล่วงหน้าอย่างน้อย 14 วัน
+                </span>
+
               </span>
               {Object.entries(subcategoryColorMap).map(([label, color]) => (
                 <span key={label}>
