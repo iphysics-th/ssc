@@ -25,7 +25,7 @@ const cardData = [
   },
   {
     title: "ขอคำปรึกษาอาจารย์ผู้เชี่ยวชาญ (Hand-To-Sci)",
-    imageUrl: "/services/hand-to-sci.png",
+    imageUrl: "/services/hand-to-sci.jpg",
     description: "ขอคำปรึกษาอาจารย์ผู้เชี่ยวชาญ คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏสงขลา",
     link: "/hand-to-sci"
   }
