@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import { Layout } from 'antd';
 import Services from './components/Services/Services';
 import STEMSSCDetail from './components/Services/STEMSSC';
+import SCICAMPDetail from './components/Services/SCICAMPSSCC';
 import ReserveCheck from './features/reservation/pages/Success';
 import { FormDataProvider } from './contexts/FormDataContext';
 import Divisions from './components/Lecturers/Divisions';
@@ -64,6 +65,7 @@ const App = () => {
               <Route path="/slideupload" element={<SlideUploadComponent />} />
               <Route path="/reservation-table" element={<ReservationTable />} />
               <Route path="/stem-ssc" element={<STEMSSCDetail />} />
+              <Route path="/scicamp-ssc" element={<SCICAMPDetail />} />
               <Route path="/edu-research" element={<EduResearch />} />
             </Routes>
           </Content>

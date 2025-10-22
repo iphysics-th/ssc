@@ -10,8 +10,8 @@ const ServicesHome = () => {
     { img: '/services/sciterest-ssc.png', text: 'ตรวจสอบสถานะการจอง <br /><br />(ใช้หมายเลขการจอง 9 หลัก)', link: '/reservecheck' },
     {
       img: '/services/hand-to-sci-2.jpg',
-      text: 'ตารางคำนวณ<br />การอบรมสำหรับนักเรียน <br /><br />(Fee calculation)',
-      link: '/utility/calculation.jpg',
+      text: 'วิทยากร',
+      link: '/divisions',
       external: true // 👈 Custom flag to indicate external link
     },
   ];

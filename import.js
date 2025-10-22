@@ -2,7 +2,7 @@
 
 const dbName = 'universityReservation'; // <-- Corrected
 const collectionName = 'subjects';        // <-- Corrected
-const jsonFilePath = './chemistry.json';
+const jsonFilePath = './spa.json';
 
 // --- Script Starts Here ---
 

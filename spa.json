@@ -1,0 +1,41 @@
+[
+  {
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "ผลิตภัณฑ์สครับผิวใส",
+    "code": "health2301",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "วิทยาศาสตร์สุขภาพ",
+    "category_en": "Health Science",
+    "subcategory_th": "วิทยาศาสตร์สุขภาพและความงาม",
+    "subcategory_en": "aesthetic science",
+    "description_th": [
+      "ปฏิบัติการทำสครับสมุนไพร"
+    ],
+    "student_max": 30,
+    "price": "16000",
+    "total_classrooms": 1
+  },
+{
+    "_id": {
+      "$oid": ""
+    },
+    "name_th": "ทรีตเมนต์หน้าใส",
+    "code": "health2302",
+    "slot": 1,
+    "level_th": "มัธยมปลาย",
+    "level_en": "high",
+    "category_th": "วิทยาศาสตร์สุขภาพ",
+    "category_en": "Health Science",
+    "subcategory_th": "วิทยาศาสตร์สุขภาพและความงาม",
+    "subcategory_en": "aesthetic science",
+    "description_th": [
+      "ปฏิบัติการทรีตเมนต์รักษาสิว"
+    ],
+    "student_max": 30,
+    "price": "16000",
+    "total_classrooms": 1
+  }]
