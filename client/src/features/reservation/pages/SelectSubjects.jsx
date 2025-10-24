@@ -17,6 +17,13 @@ import SubjectSelectionModal from "../components/SubjectModal";
 import { useGetReservationRulesQuery } from "../reservationApiSlice";
 import "../../../css/Reservation/CourseSelection.css";
 
+const buildSlotKey = (dateValue, slotIndex) => {
+  if (!dateValue) return null;
+  const index = Number(slotIndex);
+  if (!Number.isFinite(index)) return null;
+  return `${dateValue}__${index}`;
+};
+
 const { Paragraph, Title } = Typography;
 dayjs.locale("th");
 dayjs.extend(isBetween);
@@ -147,6 +154,119 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
   const [activeClassIndex, setActiveClassIndex] = useState(null);
   const [activeSlotIndex, setActiveSlotIndex] = useState(null);
 
+  const activeClassSubjectOrder = useMemo(() => {
+    if (activeClassIndex === null || activeClassIndex === undefined) return [];
+    const classEntry = classSubjects[activeClassIndex];
+    const slots = Array.isArray(classEntry?.slots) ? classEntry.slots : [];
+    const seen = new Set();
+    const order = [];
+    slots.forEach((slot, idx) => {
+      if (activeSlotIndex != null && idx === activeSlotIndex) return;
+      const code = slot?.subject?.code || slot?.code || null;
+      if (!code || seen.has(code)) return;
+      seen.add(code);
+      const slotIndexValue = Number.isFinite(slot?.slotIndex)
+        ? Number(slot.slotIndex)
+        : idx;
+      order.push({ code, slotIndex: slotIndexValue });
+    });
+    return order;
+  }, [activeClassIndex, activeSlotIndex, classSubjects]);
+
+  const subjectUsageBySlotMap = useMemo(() => {
+    const map = new Map();
+    classSubjects.forEach((classEntry, classIdx) => {
+      const slots = Array.isArray(classEntry?.slots) ? classEntry.slots : [];
+      slots.forEach((slot) => {
+        const code = slot?.subject?.code;
+        if (!code) return;
+        const dateValue = slot?.date || slot?.dateValue;
+        const key = buildSlotKey(dateValue, slot?.slotIndex);
+        if (!key) return;
+        const slotIndexValue = Number(slot?.slotIndex);
+        if (
+          classIdx === activeClassIndex &&
+          Number.isFinite(slotIndexValue) &&
+          slotIndexValue === activeSlotIndex
+        )
+          return;
+        if (!map.has(key)) map.set(key, new Map());
+        const subjectMap = map.get(key);
+        subjectMap.set(code, (subjectMap.get(code) || 0) + 1);
+      });
+    });
+    return map;
+  }, [classSubjects, activeClassIndex, activeSlotIndex]);
+
+  const subjectUsageBySlotSnapshot = useMemo(() => {
+    const snapshot = {};
+    subjectUsageBySlotMap.forEach((subjectMap, key) => {
+      snapshot[key] = {};
+      subjectMap.forEach((count, code) => {
+        snapshot[key][code] = count;
+      });
+    });
+    return snapshot;
+  }, [subjectUsageBySlotMap]);
+
+  const overallSubjectCountsMap = useMemo(() => {
+    const counts = new Map();
+    classSubjects.forEach((classEntry, classIdx) => {
+      const slots = Array.isArray(classEntry?.slots) ? classEntry.slots : [];
+      const uniqueCodes = new Set();
+      slots.forEach((slot) => {
+        const code = slot?.subject?.code;
+        if (!code) return;
+        const slotIndexValue = Number(slot?.slotIndex);
+        if (
+          classIdx === activeClassIndex &&
+          Number.isFinite(slotIndexValue) &&
+          slotIndexValue === activeSlotIndex
+        )
+          return;
+        uniqueCodes.add(code);
+      });
+      uniqueCodes.forEach((code) => {
+        counts.set(code, (counts.get(code) || 0) + 1);
+      });
+    });
+    return counts;
+  }, [classSubjects, activeClassIndex, activeSlotIndex]);
+
+  const overallSubjectCountsSnapshot = useMemo(() => {
+    const snapshot = {};
+    overallSubjectCountsMap.forEach((count, code) => {
+      snapshot[code] = count;
+    });
+    return snapshot;
+  }, [overallSubjectCountsMap]);
+
+  const countSubjectUsageForSlot = useCallback(
+    (subjectCode, dateValue, slotIndex, skipIndices = []) => {
+      if (!subjectCode || !dateValue || !Number.isFinite(slotIndex)) return 0;
+      let count = 0;
+      classSubjects.forEach((classEntry, classIdx) => {
+        const slots = Array.isArray(classEntry?.slots) ? classEntry.slots : [];
+        slots.forEach((slot) => {
+          const slotCode = slot?.subject?.code;
+          if (!slotCode || slotCode !== subjectCode) return;
+          if (!slot?.date || slot.date !== dateValue) return;
+          const slotIdxValue = Number(slot?.slotIndex);
+          if (!Number.isFinite(slotIdxValue) || slotIdxValue !== slotIndex) return;
+          if (
+            classIdx === activeClassIndex &&
+            skipIndices.includes(slotIdxValue)
+          ) {
+            return;
+          }
+          count += 1;
+        });
+      });
+      return count;
+    },
+    [classSubjects, activeClassIndex]
+  );
+
   const resolveSubcategoryBlock = useCallback(
     (subcategoryKey, durationRaw) => {
       if (activeSlotIndex === null || activeSlotIndex === undefined) return null;
@@ -200,6 +320,12 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
     return slotDefinitions[activeSlotIndex] || null;
   }, [activeSlotIndex, slotDefinitions]);
 
+  const activeSlotKey = useMemo(() => {
+    if (!activeSlot) return null;
+    const slotIndexValue = activeSlot?.slotIndex;
+    return buildSlotKey(activeSlot?.dateValue, slotIndexValue);
+  }, [activeSlot]);
+
   const studentsPerClass = useMemo(() => {
     const saved = Array.isArray(formData.studentsPerClass)
       ? formData.studentsPerClass
@@ -249,6 +375,48 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
         )
       );
       return;
+    }
+
+    const subjectCode = selection.subject?.code || null;
+    const totalClassroomsRaw =
+      selection.subject?.total_classroom ?? selection.subject?.total_classrooms;
+    const totalClassroomsValue = Number(totalClassroomsRaw);
+    if (
+      subjectCode &&
+      Number.isFinite(totalClassroomsValue) &&
+      totalClassroomsValue > 0
+    ) {
+      for (let offset = 0; offset < duration; offset++) {
+        const targetSlotIndex = activeSlotIndex + offset;
+        if (targetSlotIndex >= slotDefinitions.length) {
+          message.warning("ช่วงเวลานี้ไม่เพียงพอสำหรับวิชานี้");
+          return;
+        }
+        const definition = slotDefinitions[targetSlotIndex];
+        if (!definition || !definition.dateValue) {
+          message.warning("กรุณาเลือกวันที่ให้ครบก่อนเลือกวิชานี้");
+          return;
+        }
+        const slotIdxValue = Number(definition.slotIndex);
+        if (!Number.isFinite(slotIdxValue)) {
+          message.warning("ไม่สามารถระบุช่วงเวลานี้ได้");
+          return;
+        }
+        const usage = countSubjectUsageForSlot(
+          subjectCode,
+          definition.dateValue,
+          slotIdxValue,
+          [slotIdxValue]
+        );
+        if (usage >= totalClassroomsValue) {
+          const displayDate =
+            definition.displayDate || formatBuddhistDate(definition.dateValue);
+          message.warning(
+            `ช่วงเวลา ${displayDate} ${definition.slotLabel || ""} ถูกจองเต็มแล้ว`
+          );
+          return;
+        }
+      }
     }
 
     setClassSubjects((prev) => {
@@ -571,6 +739,11 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
         }
         resolveSubcategoryBlock={resolveSubcategoryBlock}
         buildRuleBlockMessage={buildRuleBlockMessage}
+        existingSubjectOrder={activeClassSubjectOrder}
+        subjectUsageBySlot={subjectUsageBySlotSnapshot}
+        overallSubjectCounts={overallSubjectCountsSnapshot}
+        activeSlotKey={activeSlotKey}
+        activeClassIndex={activeClassIndex ?? 0}
       />
     </Protected>
   );

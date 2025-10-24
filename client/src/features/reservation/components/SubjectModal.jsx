@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import {
@@ -50,6 +50,11 @@ const SubjectSelectionModal = ({
   resolveSubcategoryBlock,
   buildRuleBlockMessage,
   activeSlot = null,
+  existingSubjectOrder = [],
+  subjectUsageBySlot = {},
+  overallSubjectCounts = {},
+  activeSlotKey = null,
+  activeClassIndex = 0,
 }) => {
   const [levels, setLevels] = useState([]);
   const [selectedLevel, setSelectedLevel] = useState(null);
@@ -171,13 +176,109 @@ const SubjectSelectionModal = ({
     [selectedSubject, structuredSubjects]
   );
 
+  const normalizedSubjectOrder = useMemo(() => {
+    if (!Array.isArray(existingSubjectOrder)) return [];
+    return existingSubjectOrder
+      .map((entry) => {
+        if (!entry) return null;
+        if (typeof entry === "string") {
+          return { code: entry, slotIndex: Number.MAX_SAFE_INTEGER };
+        }
+        if (typeof entry === "object") {
+          const code =
+            typeof entry.code === "string" && entry.code.trim().length
+              ? entry.code
+              : null;
+          if (!code) return null;
+          const slotIndexRaw =
+            typeof entry.slotIndex === "number" && Number.isFinite(entry.slotIndex)
+              ? entry.slotIndex
+              : Number.MAX_SAFE_INTEGER;
+          return { code, slotIndex: slotIndexRaw };
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.slotIndex - b.slotIndex);
+  }, [existingSubjectOrder]);
+
+  const isFirstClass = Number(activeClassIndex) === 0;
+  const hasPriorSubjectInClass = normalizedSubjectOrder.length > 0;
+
+  const resolveAvailability = useCallback(
+    (subject) => {
+      const code = subject?.code || null;
+      if (!code) {
+        return {
+          total: null,
+          used: 0,
+          remaining: null,
+          isFull: false,
+        };
+      }
+      const totalRaw =
+        subject?.total_classroom != null
+          ? Number(subject.total_classroom)
+          : subject?.total_classrooms != null
+            ? Number(subject.total_classrooms)
+            : null;
+      const total =
+        Number.isFinite(totalRaw) && totalRaw > 0 ? Math.floor(totalRaw) : null;
+      const slotUsage = activeSlotKey && subjectUsageBySlot?.[activeSlotKey]
+        ? subjectUsageBySlot[activeSlotKey][code] || 0
+        : 0;
+      const remaining = total != null ? Math.max(total - slotUsage, 0) : null;
+      return {
+        total,
+        used: slotUsage,
+        remaining,
+        isFull: total != null && remaining <= 0,
+      };
+    },
+    [subjectUsageBySlot, activeSlotKey]
+  );
+
+  const buildDiscountInfo = useCallback(
+    (subject) => {
+      const basePrice = Number(subject?.price) || 0;
+      const code = subject?.code || null;
+      const perClassEligible = !isFirstClass || hasPriorSubjectInClass;
+      const overallCount = code ? overallSubjectCounts?.[code] || 0 : 0;
+      const totalClassrooms =
+        subject?.total_classroom != null
+          ? Number(subject.total_classroom)
+          : subject?.total_classrooms != null
+            ? Number(subject.total_classrooms)
+            : null;
+      const repeatEligible =
+        Number.isFinite(totalClassrooms) &&
+        totalClassrooms > 2 &&
+        overallCount >= 1;
+      const discountEligible = perClassEligible || repeatEligible;
+      const discountAmount = discountEligible ? Math.min(4000, basePrice) : 0;
+      const discountedPrice = Math.max(0, basePrice - discountAmount);
+      return {
+        basePrice,
+        discountAmount,
+        discountedPrice,
+        isDiscountApplied: discountAmount > 0,
+        perClassEligible,
+        repeatEligible,
+      };
+    },
+    [isFirstClass, hasPriorSubjectInClass, overallSubjectCounts]
+  );
+
   const canConfirmSelection = useMemo(() => {
     if (!selectedRecord) return false;
-    if (
-      classStudentCount > 0 &&
-      selectedRecord.subject.student_max < classStudentCount
-    )
-      return false;
+    const subjectOpen = isSubjectOpen(
+      selectedRecord.subject,
+      selectedRecord.category,
+      selectedRecord.subcategory
+    );
+    if (!subjectOpen) return false;
+    const availability = resolveAvailability(selectedRecord.subject);
+    if (availability.isFull) return false;
     if (
       typeof resolveSubcategoryBlock === "function" &&
       selectedRecord.subcategory?.subcategory_en
@@ -193,7 +294,7 @@ const SubjectSelectionModal = ({
       if (blockInfo) return false;
     }
     return true;
-  }, [selectedRecord, classStudentCount, resolveSubcategoryBlock]);
+  }, [selectedRecord, resolveAvailability, resolveSubcategoryBlock]);
 
   const handleSubjectClick = (
     subject,
@@ -203,8 +304,14 @@ const SubjectSelectionModal = ({
     blockMessage
   ) => {
     const subjectOpen = isSubjectOpen(subject, category, subcategory);
-    const capacityExceeded =
-      classStudentCount > 0 && subject.student_max < classStudentCount;
+    const overflowCount = Math.max(
+      0,
+      classStudentCount > 0 && subject.student_max
+        ? classStudentCount - subject.student_max
+        : 0
+    );
+    const overflowTooHigh = overflowCount > 5;
+    const availability = resolveAvailability(subject);
     const blockedByRule = !!blockInfo;
 
     if (blockedByRule)
@@ -213,8 +320,21 @@ const SubjectSelectionModal = ({
       );
 
     if (!subjectOpen) return message.warning("คอร์สนี้ปิดรับแล้ว");
-    if (capacityExceeded)
-      return message.warning("จำนวนผู้เรียนเกินกว่าที่คอร์สนี้รองรับ");
+    if (availability.isFull)
+      return message.warning("ช่วงเวลานี้ถูกจองเต็มแล้ว");
+    if (overflowTooHigh)
+      return message.warning(
+        "มีนักเรียนเกินจำนวนที่คอร์สรองรับมากกว่า 5 คน ไม่สามารถเลือกวิชานี้ได้"
+      );
+    if (overflowCount > 0) {
+      message.info(
+        `มีนักเรียนเกินจำนวนที่คอร์สรองรับ ${overflowCount} คน\nจะมีค่าบริการเพิ่ม ${overflowCount.toLocaleString(
+          "th-TH"
+        )} คน x 200 บาท = ${(
+          overflowCount * 200
+        ).toLocaleString("th-TH")} บาท`
+      );
+    }
 
     setSelectedSubject(subject.code);
     setSelectedSubjectDetail({
@@ -231,7 +351,12 @@ const SubjectSelectionModal = ({
             subcategory_th: subcategory.subcategory_th,
           }
         : null,
-      isAvailable: subjectOpen && !capacityExceeded && !blockedByRule,
+      isAvailable: subjectOpen && !blockedByRule && !availability.isFull,
+      overflowCount,
+      overflowCharge: overflowCount * 200,
+      overflowTooHigh,
+      discountInfo: buildDiscountInfo(subject),
+      availability,
     });
     setDrawerVisible(true);
   };
@@ -391,9 +516,13 @@ const SubjectSelectionModal = ({
                         {sub.subjects.map((subject) => {
                           const subjectImage = resolveImageUrl(subject.image);
                           const subjectOpen = isSubjectOpen(subject, cat, sub);
-                          const capacityExceeded =
-                            classStudentCount > 0 &&
-                            subject.student_max < classStudentCount;
+                          const overflowCount = Math.max(
+                            0,
+                            classStudentCount > 0 && subject.student_max
+                              ? classStudentCount - subject.student_max
+                              : 0
+                          );
+                          const overflowTooHigh = overflowCount > 5;
                           const durationSlots =
                             subject.slot && subject.slot > 0 ? subject.slot : 1;
                           const blockInfo =
@@ -411,8 +540,13 @@ const SubjectSelectionModal = ({
                                 )
                               : null;
                           const blockedByRule = !!blockInfo;
+                          const discountInfo = buildDiscountInfo(subject);
+                          const availability = resolveAvailability(subject);
                           const disabled =
-                            !subjectOpen || capacityExceeded || blockedByRule;
+                            !subjectOpen ||
+                            blockedByRule ||
+                            overflowTooHigh ||
+                            availability.isFull;
                           const isSelected = selectedSubject === subject.code;
                           const hours = durationSlots * 3;
 
@@ -488,6 +622,25 @@ const SubjectSelectionModal = ({
                                 }
                                 description={
                                   <div style={{ textAlign: "center", marginTop: 6 }}>
+                                    <div style={{ marginBottom: 6 }}>
+                                      {discountInfo.isDiscountApplied ? (
+                                        <>
+                                          <Text
+                                            delete
+                                            style={{ marginRight: 8, fontSize: "1rem" }}
+                                          >
+                                            ราคาปกติ ฿{discountInfo.basePrice.toLocaleString("th-TH")} บาท
+                                          </Text>
+                                          <Text strong style={{ color: "#16a34a", fontSize: "1.1rem" }}>
+                                            ราคาหลังส่วนลด ฿{discountInfo.discountedPrice.toLocaleString("th-TH")} บาท
+                                          </Text>
+                                        </>
+                                      ) : (
+                                        <Text strong style={{ fontSize: "1.1rem" }}>
+                                          ราคาปกติ ฿{discountInfo.basePrice.toLocaleString("th-TH")} บาท
+                                        </Text>
+                                      )}
+                                    </div>
                                     <Space
                                       size={4}
                                       wrap
@@ -503,7 +656,52 @@ const SubjectSelectionModal = ({
                                         {subject.student_max} คน
                                       </Tag>
                                       <Tag color="geekblue">{hours} ชม.</Tag>
+                                      {availability.total != null && (
+                                        <Tag
+                                          color={
+                                            availability.remaining > 0
+                                              ? "cyan"
+                                              : "magenta"
+                                          }
+                                        >
+                                          ห้องว่าง {availability.remaining}/
+                                          {availability.total}
+                                        </Tag>
+                                      )}
+                                      {overflowCount > 0 && !overflowTooHigh && (
+                                        <Tag color="volcano">
+                                          เกิน {overflowCount} คน (+฿
+                                          {(overflowCount * 200).toLocaleString(
+                                            "th-TH"
+                                          )}
+                                          )
+                                        </Tag>
+                                      )}
+                                      {overflowTooHigh && (
+                                        <Tag color="red">
+                                          มีนักเรียนเกินจำนวนที่คอร์สรองรับมากกว่า 5 คน ไม่สามารถเลือกวิชานี้ได้
+                                        </Tag>
+                                      )}
                                     </Space>
+                                    {overflowCount > 0 && !overflowTooHigh && (
+                                      <Paragraph
+                                        style={{ fontSize: 12, marginTop: 8, color: "#dc2626" }}
+                                      >
+                                        มีนักเรียนเกินจำนวนที่คอร์สรองรับ{" "}
+                                        {overflowCount.toLocaleString("th-TH")} คน<br />
+                                        จะมีค่าบริการเพิ่ม{" "}
+                                        {overflowCount.toLocaleString("th-TH")} คน x 200 บาท ={" "}
+                                        {(overflowCount * 200).toLocaleString("th-TH")} บาท
+                                      </Paragraph>
+                                    )}
+                                    {overflowTooHigh && (
+                                      <Paragraph
+                                        type="danger"
+                                        style={{ fontSize: 12, marginTop: 8 }}
+                                      >
+                                        มีนักเรียนเกินจำนวนที่คอร์สรองรับมากกว่า 5 คน ไม่สามารถเลือกวิชานี้ได้
+                                      </Paragraph>
+                                    )}
                                     {blockMessage && (
                                       <Paragraph
                                         type="danger"
@@ -601,21 +799,51 @@ const SubjectSelectionModal = ({
               />
             </div>
 
-            <div
-              style={{
-                background: "#eff6ff",
-                border: "1px solid #bfdbfe",
-                borderRadius: 10,
-                padding: "10px 14px",
-                marginBottom: 16,
-                textAlign: "center",
-              }}
-            >
-              <Title level={3} style={{ margin: 0, color: "#2563eb" }}>
-                ฿{Number(selectedSubjectDetail.price || 0).toLocaleString("th-TH")}
-              </Title>
-              <Text style={{ color: "#475569" }}>ราคาต่อคอร์ส</Text>
-            </div>
+                <div
+                  style={{
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
+                    borderRadius: 10,
+                    padding: "10px 14px",
+                    marginBottom: 16,
+                    textAlign: "center",
+                  }}
+                >
+                  {selectedSubjectDetail.discountInfo?.isDiscountApplied ? (
+                    <>
+                      <div style={{ marginBottom: 6 }}>
+                        <Text delete style={{ fontSize: "1.2rem", color: "#64748b" }}>
+                          ราคาปกติ ฿
+                          {selectedSubjectDetail.discountInfo.basePrice.toLocaleString(
+                            "th-TH"
+                          )} บาท
+                        </Text>
+                      </div>
+                      <div style={{ marginBottom: 6 }}>
+                        <Text
+                          strong
+                          style={{ fontSize: "1.8rem", color: "#16a34a" }}
+                        >
+                          ราคาหลังส่วนลด ฿
+                          {selectedSubjectDetail.discountInfo.discountedPrice.toLocaleString(
+                            "th-TH"
+                          )} บาท
+                        </Text>
+                      </div>
+                      <Text style={{ color: "#16a34a" }}>
+                        ส่วนลด -฿
+                        {selectedSubjectDetail.discountInfo.discountAmount.toLocaleString(
+                          "th-TH"
+                        )} บาท
+                      </Text>
+                    </>
+                  ) : (
+                    <Title level={3} style={{ margin: 0, color: "#2563eb" }}>
+                      ฿{Number(selectedSubjectDetail.price || 0).toLocaleString("th-TH")} บาท
+                    </Title>
+                  )}
+                  <Text style={{ color: "#475569" }}>ราคาต่อคอร์ส</Text>
+                </div>
 
             {/* ✅ moved button here */}
             <Button
@@ -645,6 +873,50 @@ const SubjectSelectionModal = ({
               <Tag color="green">
                 จำนวนนักเรียนสูงสุด: {selectedSubjectDetail.student_max} คน
               </Tag>
+              {selectedSubjectDetail.availability &&
+                selectedSubjectDetail.availability.total != null && (
+                  <Tag
+                    color={
+                      selectedSubjectDetail.availability.remaining > 0
+                        ? "cyan"
+                        : "magenta"
+                    }
+                  >
+                    ห้องว่าง{" "}
+                    {selectedSubjectDetail.availability.remaining.toLocaleString(
+                      "th-TH"
+                    )}
+                    /
+                    {selectedSubjectDetail.availability.total.toLocaleString(
+                      "th-TH"
+                    )}
+                  </Tag>
+                )}
+              {selectedSubjectDetail.overflowTooHigh ? (
+                <Alert
+                  type="error"
+                  showIcon
+                  message="มีนักเรียนเกินจำนวนที่คอร์สรองรับมากกว่า 5 คน"
+                  description="ไม่สามารถเลือกวิชานี้ได้"
+                  style={{ marginTop: 4 }}
+                />
+              ) : (
+                selectedSubjectDetail.overflowCount > 0 && (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    message={`มีนักเรียนเกินจำนวนที่คอร์สรองรับ ${selectedSubjectDetail.overflowCount.toLocaleString(
+                      "th-TH"
+                    )} คน`}
+                    description={`จะมีค่าบริการเพิ่ม ${selectedSubjectDetail.overflowCount.toLocaleString(
+                      "th-TH"
+                    )} คน x 200 บาท = ฿${(
+                      selectedSubjectDetail.overflowCharge || 0
+                    ).toLocaleString("th-TH")}`}
+                    style={{ marginTop: 4 }}
+                  />
+                )
+              )}
               {selectedSubjectDetail.total_classroom && (
                 <Tag color="purple">
                   จำนวนห้องที่เปิด: {selectedSubjectDetail.total_classroom} ห้อง

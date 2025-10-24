@@ -1,4 +1,9 @@
-import React, { forwardRef, useImperativeHandle, useMemo } from "react";
+import React, {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+} from "react";
 import { useFormData } from "../../../contexts/FormDataContext";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -87,6 +92,7 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
     () => groupClassSubjects(classSubjects),
     [classSubjects]
   );
+  const groupedClassCount = groupedClasses.length;
 
   const classStudentCounts = useMemo(() => {
     const arr = Array.isArray(formData.studentsPerClass)
@@ -99,7 +105,151 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
     }, new Map());
   }, [formData.studentsPerClass]);
 
+  const fallbackClassStudents = useMemo(() => {
+    const parsed = Number(numberOfStudents);
+    if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+    return groupedClassCount <= 1 ? Math.round(parsed) : 0;
+  }, [groupedClassCount, numberOfStudents]);
+
+  const resolveClassStudents = (classNumber) => {
+    const value = classStudentCounts.get(classNumber);
+    if (Number.isFinite(value) && value > 0) return value;
+    return fallbackClassStudents;
+  };
+
+  const getUniqueSubjects = useCallback((cls) => {
+    const uniqueSubjects = {};
+    (cls?.slots || []).forEach((slot, slotIndex) => {
+      const subj = slot.subject;
+      if (!subj) return;
+      const code = subj.code || slot.code || `slot-${slot.slotIndex}`;
+      if (!uniqueSubjects[code]) {
+        const slotCount =
+          subj.slot && subj.slot > 0 ? Number(subj.slot) : 1;
+        const rawPrice =
+          slot.price != null ? Number(slot.price) : Number(subj.price);
+        uniqueSubjects[code] = {
+          ...subj,
+          code,
+          level_th: subj.level_th || "-",
+          category_th: subj.category_th || "-",
+          subcategory_th: subj.subcategory_th || "-",
+          price: Number.isFinite(rawPrice) ? rawPrice : 0,
+          slotCount,
+          dates: {},
+          firstSlotIndex: Number.isFinite(slot?.slotIndex)
+            ? Number(slot.slotIndex)
+            : Number.isFinite(slotIndex)
+              ? slotIndex
+              : Number.MAX_SAFE_INTEGER,
+        };
+      }
+      const slotIndexValue = Number.isFinite(slot?.slotIndex)
+        ? Number(slot.slotIndex)
+        : Number.isFinite(slotIndex)
+          ? slotIndex
+          : null;
+      if (
+        Number.isFinite(slotIndexValue) &&
+        (uniqueSubjects[code].firstSlotIndex == null ||
+          slotIndexValue < uniqueSubjects[code].firstSlotIndex)
+      ) {
+        uniqueSubjects[code].firstSlotIndex = slotIndexValue;
+      }
+      const dateKey = slot.date
+        ? dayjs(slot.date).format("YYYY-MM-DD")
+        : "unknown";
+      if (!uniqueSubjects[code].dates[dateKey])
+        uniqueSubjects[code].dates[dateKey] = new Set();
+      if (slot.slot?.includes("เช้า"))
+        uniqueSubjects[code].dates[dateKey].add("9.00–12.00");
+      else if (slot.slot?.includes("บ่าย"))
+        uniqueSubjects[code].dates[dateKey].add("13.00–16.00");
+      else if (slot.slot)
+        uniqueSubjects[code].dates[dateKey].add(slot.slot);
+    });
+    return Object.values(uniqueSubjects).sort((a, b) => {
+      const aIdx = Number.isFinite(a.firstSlotIndex)
+        ? a.firstSlotIndex
+        : Number.MAX_SAFE_INTEGER;
+      const bIdx = Number.isFinite(b.firstSlotIndex)
+        ? b.firstSlotIndex
+        : Number.MAX_SAFE_INTEGER;
+      return aIdx - bIdx;
+    });
+  }, []);
+
   const currency = (v) => Number(v || 0).toLocaleString("th-TH");
+
+  const overallTotals = useMemo(() => {
+    const totals = { base: 0, discount: 0, overflow: 0 };
+    const globalSubjectSelectionCounts = new Map();
+
+    groupedClasses.forEach((cls, classIdx) => {
+      const mapValue = classStudentCounts.get(cls.classNumber);
+      const classStudents =
+        Number.isFinite(mapValue) && mapValue > 0
+          ? mapValue
+          : fallbackClassStudents;
+      const subjects = getUniqueSubjects(cls);
+
+      subjects.forEach((record, idx) => {
+        const subjectCode =
+          record.code ||
+          record.name_th ||
+          record.subcategory_th ||
+          `subject-${idx}`;
+        const base = Number(record.price) || 0;
+        let overflowCount = 0;
+        const capacity = Number(record.student_max);
+        if (
+          classStudents > 0 &&
+          Number.isFinite(capacity) &&
+          capacity > 0
+        ) {
+          overflowCount = Math.max(0, classStudents - capacity);
+        }
+        const overflowTooHigh = overflowCount > 5;
+        const chargeableOverflow = overflowTooHigh ? 0 : overflowCount;
+        const overflowCharge = chargeableOverflow * 200;
+
+        const perClassEligible = classIdx >= 1 || idx >= 1;
+        const globalPriorCount =
+          globalSubjectSelectionCounts.get(subjectCode) || 0;
+        const totalClassrooms =
+          record?.total_classroom != null
+            ? Number(record.total_classroom)
+            : record?.total_classrooms != null
+              ? Number(record.total_classrooms)
+              : null;
+        const repeatEligible =
+          Number.isFinite(totalClassrooms) &&
+          totalClassrooms > 2 &&
+          globalPriorCount >= 1;
+
+        const discountEligible = perClassEligible || repeatEligible;
+        const discountAmount = discountEligible ? Math.min(4000, base) : 0;
+
+        totals.base += base;
+        totals.discount += discountAmount;
+        totals.overflow += overflowCharge;
+
+        globalSubjectSelectionCounts.set(subjectCode, globalPriorCount + 1);
+      });
+    });
+
+    return totals;
+  }, [
+    groupedClasses,
+    classStudentCounts,
+    fallbackClassStudents,
+    getUniqueSubjects,
+  ]);
+
+  const overallNetBase = overallTotals.base - overallTotals.discount;
+  const grandTotal = overallNetBase + overallTotals.overflow;
+
+  const globalSubjectSelectionCountsForDisplay = new Map();
 
   const saveData = async () => {
     try {
@@ -110,16 +260,7 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
           }, 0)
         : formData.numberOfStudents || 0;
 
-      const totalPrice = groupedClasses.reduce((sum, cls) => {
-        const uniq = {};
-        cls.slots.forEach((s) => {
-          const subj = s.subject;
-          if (!subj) return;
-          const code = subj.code || s.code;
-          if (!uniq[code]) uniq[code] = subj.price || 0;
-        });
-        return sum + Object.values(uniq).reduce((a, b) => a + b, 0);
-      }, 0);
+      const totalPrice = grandTotal;
 
       updateFormData({ price: totalPrice, numberOfStudents: totalStudents });
       await createReservation({
@@ -230,45 +371,78 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
         bordered={false}
       >
         {groupedClasses.length ? (
-          groupedClasses.map((cls) => {
-            const classStudents = classStudentCounts.get(cls.classNumber) || 0;
+          groupedClasses.map((cls, classIdx) => {
+            const classStudents = resolveClassStudents(cls.classNumber);
+            const subjectsArray = getUniqueSubjects(cls);
+            const classPricing = subjectsArray.reduce(
+              (acc, record, idx) => {
+                const subjectCode =
+                  record.code ||
+                  record.name_th ||
+                  record.subcategory_th ||
+                  `subject-${idx}`;
+                const base = Number(record.price) || 0;
+                let overflowCount = 0;
+                const capacity = Number(record.student_max);
+                if (
+                  classStudents > 0 &&
+                  Number.isFinite(capacity) &&
+                  capacity > 0
+                ) {
+                  overflowCount = Math.max(0, classStudents - capacity);
+                }
+                const overflowTooHigh = overflowCount > 5;
+                const chargeableOverflow = overflowTooHigh ? 0 : overflowCount;
+                const overflowCharge = chargeableOverflow * 200;
 
-            // Combine subjects by unique code
-            const uniqueSubjects = {};
-            cls.slots.forEach((slot) => {
-              const subj = slot.subject;
-              if (!subj) return;
-              const code = subj.code || slot.code;
-              if (!uniqueSubjects[code]) {
-                uniqueSubjects[code] = {
-                  ...subj,
-                  code,
-                  level_th: subj.level_th || "-",
-                  category_th: subj.category_th || "-",
-                  subcategory_th: subj.subcategory_th || "-",
-                  price: subj.price || 0,
-                  slotCount: subj.slot || 1,
-                  dates: {},
-                };
-              }
-              const dateKey = slot.date
-                ? dayjs(slot.date).format("YYYY-MM-DD")
-                : "unknown";
-              if (!uniqueSubjects[code].dates[dateKey])
-                uniqueSubjects[code].dates[dateKey] = new Set();
-              if (slot.slot?.includes("เช้า"))
-                uniqueSubjects[code].dates[dateKey].add("9.00–12.00");
-              else if (slot.slot?.includes("บ่าย"))
-                uniqueSubjects[code].dates[dateKey].add("13.00–16.00");
-              else if (slot.slot)
-                uniqueSubjects[code].dates[dateKey].add(slot.slot);
-            });
+                const perClassEligible = classIdx >= 1 || idx >= 1;
+                const globalPriorCount =
+                  globalSubjectSelectionCountsForDisplay.get(subjectCode) || 0;
+                const totalClassrooms =
+                  record?.total_classroom != null
+                    ? Number(record.total_classroom)
+                    : record?.total_classrooms != null
+                      ? Number(record.total_classrooms)
+                      : null;
+                const repeatEligible =
+                  Number.isFinite(totalClassrooms) &&
+                  totalClassrooms > 2 &&
+                  globalPriorCount >= 1;
 
-            const subjectsArray = Object.values(uniqueSubjects);
-            const totalClassPrice = subjectsArray.reduce(
-              (a, b) => a + (b.price || 0),
-              0
+                const discountEligible = perClassEligible || repeatEligible;
+                const discountAmount = discountEligible
+                  ? Math.min(4000, base)
+                  : 0;
+                const discountedBase = Math.max(0, base - discountAmount);
+                const total = discountedBase + overflowCharge;
+
+                acc.base += base;
+                acc.discount += discountAmount;
+                acc.overflow += overflowCharge;
+                acc.breakdown.push({
+                  ...record,
+                  basePrice: base,
+                  discountAmount,
+                  discountedBase,
+                  overflowCount,
+                  overflowCharge,
+                  overflowTooHigh,
+                  discountEligible,
+                  repeatEligible,
+                  total,
+                });
+
+                globalSubjectSelectionCountsForDisplay.set(
+                  subjectCode,
+                  globalPriorCount + 1
+                );
+                return acc;
+              },
+              { base: 0, discount: 0, overflow: 0, breakdown: [] }
             );
+            const subjectsArrayWithOverflow = classPricing.breakdown;
+            const netBase = classPricing.base - classPricing.discount;
+            const totalClassPrice = netBase + classPricing.overflow;
 
             return (
               <div key={cls.classNumber} style={{ marginBottom: 40 }}>
@@ -291,7 +465,7 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
                 </div>
 
                 {/* Subject cards */}
-                {subjectsArray.map((record, idx) => (
+                {subjectsArrayWithOverflow.map((record, idx) => (
                   <div
                     key={idx}
                     style={{
@@ -337,10 +511,58 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
                     </div>
 
                     {/* Price */}
-                    <div style={{ textAlign: "right", marginTop: 6 }}>
-                      <Text strong style={{ color: "#1677ff" }}>
-                        {currency(record.price)} บาท
-                      </Text>
+                    <div style={{ marginTop: 10, textAlign: "right" }}>
+                      <div>
+                        <Text
+                          delete={record.discountAmount > 0}
+                          style={{
+                            fontSize: "0.95rem",
+                            color: record.discountAmount > 0 ? "#94a3b8" : "#1677ff",
+                            marginRight: record.discountAmount > 0 ? 8 : 0,
+                          }}
+                        >
+                          ราคาปกติ ฿{currency(record.basePrice)} บาท
+                        </Text>
+                        {record.discountAmount > 0 && (
+                          <Text strong style={{ color: "#16a34a", fontSize: "1.05rem" }}>
+                            ราคาหลังส่วนลด ฿{currency(record.discountedBase)} บาท
+                          </Text>
+                        )}
+                      </div>
+                      {record.discountAmount > 0 && (
+                        <div style={{ color: "#16a34a", fontSize: "0.9rem" }}>
+                          ส่วนลด -฿{currency(record.discountAmount)} บาท
+                        </div>
+                      )}
+                      {record.overflowTooHigh ? (
+                        <div style={{ marginTop: 6, color: "#dc2626", fontSize: "0.9rem" }}>
+                          มีนักเรียนเกินจำนวนที่คอร์สรองรับมากกว่า 5 คน ไม่สามารถเลือกวิชานี้ได้
+                        </div>
+                      ) : (
+                        record.overflowCount > 0 && (
+                          <div style={{ marginTop: 6, color: "#dc2626", fontSize: "0.9rem" }}>
+                            <div>
+                              มีนักเรียนเกินจำนวนที่คอร์สรองรับ{" "}
+                              {record.overflowCount.toLocaleString("th-TH")} คน
+                            </div>
+                            <div>
+                              จะมีค่าบริการเพิ่ม{" "}
+                              {record.overflowCount.toLocaleString("th-TH")} คน x 200 บาท ={" "}
+                              {currency(record.overflowCharge)} บาท
+                            </div>
+                          </div>
+                        )
+                      )}
+                      <div
+                        style={{
+                          fontSize: "0.95rem",
+                          color: "#0f172a",
+                          marginTop: 6,
+                          fontWeight: 600,
+                        }}
+                      >
+                        รวมสุทธิ: ฿{currency(record.total)} บาท
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -349,12 +571,33 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
                 <div
                   style={{
                     textAlign: "right",
-                    fontWeight: "bold",
                     color: "#334155",
                     marginTop: 12,
                   }}
                 >
-                  รวม: {currency(totalClassPrice)} บาท
+                  <div>ราคาพื้นฐานรวม: {currency(classPricing.base)} บาท</div>
+                  {classPricing.discount > 0 && (
+                    <div style={{ color: "#16a34a" }}>
+                      ส่วนลดรวม: -{currency(classPricing.discount)} บาท
+                    </div>
+                  )}
+                  <div>
+                    ยอดหลังส่วนลด: {currency(netBase)} บาท
+                  </div>
+                  {classPricing.overflow > 0 && (
+                    <div style={{ color: "#dc2626" }}>
+                      ค่าบริการเพิ่มจากนักเรียนเกิน:{" "}
+                      {currency(classPricing.overflow)} บาท
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      marginTop: 4,
+                    }}
+                  >
+                    รวมสุทธิ: {currency(totalClassPrice)} บาท
+                  </div>
                 </div>
               </div>
             );
@@ -368,20 +611,25 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
       <div style={{ textAlign: "center", marginTop: 24 }}>
         <Title level={4} style={{ color: "#1677ff" }}>
           <DollarOutlined /> ค่าบริการรวมทั้งหมด:{" "}
-          {groupedClasses
-            .reduce((sum, cls) => {
-              const uniq = {};
-              cls.slots.forEach((slot) => {
-                const subj = slot.subject;
-                if (!subj) return;
-                const code = subj.code || slot.code;
-                if (!uniq[code]) uniq[code] = subj.price || 0;
-              });
-              return sum + Object.values(uniq).reduce((a, b) => a + b, 0);
-            }, 0)
-            .toLocaleString("th-TH")}{" "}
-          บาท
+          {currency(grandTotal)} บาท
         </Title>
+        <div
+          style={{
+            color: "#64748b",
+            fontSize: "0.95rem",
+            marginTop: 6,
+            lineHeight: 1.6,
+          }}
+        >
+          <div>ราคาก่อนส่วนลด {currency(overallTotals.base)} บาท</div>
+          {overallTotals.discount > 0 && (
+            <div>ส่วนลดรวม -{currency(overallTotals.discount)} บาท</div>
+          )}
+          <div>ยอดหลังส่วนลด {currency(overallNetBase)} บาท</div>
+          {overallTotals.overflow > 0 && (
+            <div>ค่าบริการเพิ่ม +{currency(overallTotals.overflow)} บาท</div>
+          )}
+        </div>
       </div>
 
       {!embedded && (
