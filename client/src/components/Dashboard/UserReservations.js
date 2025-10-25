@@ -333,8 +333,12 @@ const ReservationDetailCard = ({ reservation, currency }) => {
   const statusColor = confirmationDotColorMap[status] || "#999";
   const statusText = translateConfirmationStatus(status);
 
+  // --- new global counter for discount calculation ---
+  const globalSubjectSelectionCounts = new Map();
+
   return (
     <div>
+      {/* HEADER */}
       <div
         style={{
           display: "flex",
@@ -345,7 +349,7 @@ const ReservationDetailCard = ({ reservation, currency }) => {
       >
         <div>
           <Text strong style={{ fontSize: "1rem", color: "#1677ff" }}>
-            ค่าบริการรวม: {currency(price)} บาท
+            ค่าบริการรวมทั้งหมด: {currency(price)} บาท
           </Text>
           <br />
           <Text type="secondary">
@@ -398,24 +402,29 @@ const ReservationDetailCard = ({ reservation, currency }) => {
       <Text strong>จำนวนห้องเรียน:</Text>{" "}
       <Text>{reservation.numberOfClasses || 1}</Text>
 
+      {/* CLASS DETAILS */}
       {classSubjects.map((cls, i) => {
         const classNumber = cls.classNumber || i + 1;
         const slots = cls.slots || [];
-
         const uniqueSubjects = {};
-        slots.forEach((slot) => {
+
+        // --- build unique subject map (like SummaryPage) ---
+        slots.forEach((slot, slotIndex) => {
           const subj = slot?.subject;
           if (!subj) return;
-          const code = subj.code || slot.code;
+          const code = subj.code || slot.code || `slot-${slotIndex}`;
           if (!uniqueSubjects[code]) {
+            const slotCount = subj.slot && subj.slot > 0 ? Number(subj.slot) : 1;
+            const rawPrice =
+              slot.price != null ? Number(slot.price) : Number(subj.price);
             uniqueSubjects[code] = {
               ...subj,
               code,
-              price: subj.price || 0,
               level_th: subj.level_th || "-",
               category_th: subj.category_th || "-",
               subcategory_th: subj.subcategory_th || "-",
-              slotCount: subj.slot || 1,
+              price: Number.isFinite(rawPrice) ? rawPrice : 0,
+              slotCount,
               dates: {},
             };
           }
@@ -434,13 +443,42 @@ const ReservationDetailCard = ({ reservation, currency }) => {
         });
 
         const subjectsArray = Object.values(uniqueSubjects);
-        const totalClassPrice = subjectsArray.reduce(
-          (a, b) => a + (b.price || 0),
-          0
-        );
+        let classPricing = { base: 0, discount: 0, overflow: 0, breakdown: [] };
+
+        subjectsArray.forEach((record, idx) => {
+          const subjectCode =
+            record.code || record.name_th || record.subcategory_th || `subject-${idx}`;
+          const base = Number(record.price) || 0;
+
+          const globalPriorCount = globalSubjectSelectionCounts.get(subjectCode) || 0;
+          const perClassEligible = i >= 1 || idx >= 1;
+          const repeatEligible = globalPriorCount >= 1;
+          const discountEligible = perClassEligible || repeatEligible;
+          const discountAmount = discountEligible ? Math.min(4000, base) : 0;
+
+          const discountedBase = Math.max(0, base - discountAmount);
+          const total = discountedBase;
+
+          classPricing.base += base;
+          classPricing.discount += discountAmount;
+          classPricing.breakdown.push({
+            ...record,
+            basePrice: base,
+            discountAmount,
+            discountedBase,
+            discountEligible,
+            total,
+          });
+
+          globalSubjectSelectionCounts.set(subjectCode, globalPriorCount + 1);
+        });
+
+        const netBase = classPricing.base - classPricing.discount;
+        const totalClassPrice = netBase + classPricing.overflow;
 
         return (
           <div key={i} style={{ marginTop: 24 }}>
+            {/* Class Header */}
             <div
               style={{
                 background: "linear-gradient(90deg,#eff6ff,#ffffff)",
@@ -455,64 +493,108 @@ const ReservationDetailCard = ({ reservation, currency }) => {
               </Title>
             </div>
 
-            {subjectsArray.length > 0 ? (
-              subjectsArray.map((record, idx) => (
-                <Card
-                  key={idx}
-                  size="small"
-                  style={{
-                    marginBottom: 12,
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 10,
-                    background: "#ffffff",
-                    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  <div
+            {/* Subject Cards */}
+            {classPricing.breakdown.map((record, idx) => (
+              <Card
+                key={idx}
+                size="small"
+                style={{
+                  marginBottom: 12,
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 10,
+                  background: "#ffffff",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+                }}
+              >
+                {/* Dates */}
+                {Object.entries(record.dates).map(([date, times]) => (
+                  <div key={date} style={{ marginBottom: 4 }}>
+                    <Text strong>{formatBuddhistDate(date)}:</Text>{" "}
+                    <Text type="secondary">
+                      {Array.from(times).join(" และ ")}
+                    </Text>
+                  </div>
+                ))}
+
+                <Divider style={{ margin: "8px 0" }} />
+
+                {/* Info */}
+                <div>
+                  <strong>{record.name_th}</strong>{" "}
+                  {record.code && (
+                    <Text type="secondary" style={{ fontSize: "0.85rem" }}>
+                      ({record.code})
+                    </Text>
+                  )}
+                </div>
+                <div style={{ marginTop: 6 }}>
+                  <Tag color="blue">{record.level_th}</Tag>
+                  <Tag color="cyan">{record.category_th}</Tag>
+                  <Tag color="purple">{record.subcategory_th}</Tag>
+                  <Tag color="magenta">
+                    ระยะเวลาเรียน {record.slotCount * 3} ชั่วโมง
+                  </Tag>
+                </div>
+
+                {/* Price Section */}
+                <div style={{ textAlign: "right", marginTop: 10 }}>
+                  <Text
+                    delete={record.discountAmount > 0}
                     style={{
-                      marginBottom: 8,
-                      paddingBottom: 6,
-                      borderBottom: "1px dashed #e2e8f0",
+                      color:
+                        record.discountAmount > 0 ? "#94a3b8" : "#1677ff",
+                      fontSize: "0.95rem",
+                      marginRight: record.discountAmount > 0 ? 8 : 0,
                     }}
                   >
-                    {Object.entries(record.dates).map(([date, times]) => (
-                      <div key={date}>
-                        <Text strong>{formatBuddhistDate(date)}:</Text>{" "}
-                        <Text type="secondary">
-                          {Array.from(times).join(" และ ")}
-                        </Text>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div>
-                    <strong>{record.name_th}</strong>{" "}
-                    {record.code && (
-                      <Text type="secondary" style={{ fontSize: "0.85rem" }}>
-                        ({record.code})
+                    ราคาปกติ ฿{currency(record.basePrice)}
+                  </Text>
+                  {record.discountAmount > 0 && (
+                    <>
+                      <Text strong style={{ color: "#16a34a", fontSize: "1rem" }}>
+                        ราคาหลังส่วนลด ฿{currency(record.discountedBase)}
                       </Text>
-                    )}
+                      <div
+                        style={{
+                          color: "#16a34a",
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        ส่วนลด -฿{currency(record.discountAmount)}
+                      </div>
+                    </>
+                  )}
+                  <div
+                    style={{
+                      fontSize: "0.95rem",
+                      color: "#0f172a",
+                      marginTop: 4,
+                      fontWeight: 600,
+                    }}
+                  >
+                    รวมสุทธิ: ฿{currency(record.total)}
                   </div>
+                </div>
+              </Card>
+            ))}
 
-                  <div style={{ marginTop: 6 }}>
-                    <Tag color="blue">{record.level_th}</Tag>
-                    <Tag color="cyan">{record.category_th}</Tag>
-                    <Tag color="purple">{record.subcategory_th}</Tag>
-                    <Tag color="magenta">
-                      ระยะเวลาเรียน {record.slotCount * 3} ชั่วโมง
-                    </Tag>
-                    <Tag color="gold">
-                      ฿{record.price.toLocaleString("th-TH")}
-                    </Tag>
-                  </div>
-                </Card>
-              ))
-            ) : (
-              <Text type="secondary">ยังไม่ได้เลือกวิชา</Text>
-            )}
-
+            {/* Class Total */}
             <div style={{ textAlign: "right", marginTop: 8 }}>
-              <Text strong>รวม: {currency(totalClassPrice)} บาท</Text>
+              <div>ราคาพื้นฐานรวม: {currency(classPricing.base)} บาท</div>
+              {classPricing.discount > 0 && (
+                <div style={{ color: "#16a34a" }}>
+                  ส่วนลดรวม: -{currency(classPricing.discount)} บาท
+                </div>
+              )}
+              <div
+                style={{
+                  fontWeight: 700,
+                  marginTop: 4,
+                  color: "#0f172a",
+                }}
+              >
+                รวมสุทธิ: {currency(totalClassPrice)} บาท
+              </div>
             </div>
           </div>
         );
@@ -520,5 +602,6 @@ const ReservationDetailCard = ({ reservation, currency }) => {
     </div>
   );
 };
+
 
 export default UserReservations;

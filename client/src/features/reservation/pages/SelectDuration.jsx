@@ -432,6 +432,7 @@ const CourseSelection = forwardRef(({ onNext, embedded = false }, ref) => {
               isModalVisible={isModalVisible}
               handleCancel={handleCancel}
               onSubjectSelected={onSubjectSelected}
+              activeSlot={value}
               numberOfStudents={numberOfStudents}
             />
           </div>

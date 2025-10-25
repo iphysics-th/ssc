@@ -1,5 +1,6 @@
 const db = require("../models");
 const Subject = db.subject; // Assuming your subject model is named 'subject' in db
+const Reservation = db.reservation;
 const CategoryStatus = db.categoryStatus;
 const SubcategoryStatus = db.subcategoryStatus;
 
@@ -202,8 +203,75 @@ exports.findCodesByCategory = async (req, res) => {
         const isCategoryActive = categoryStatusDoc ? categoryStatusDoc.isActive !== false : true;
         const isSubcategoryActive = subcategoryStatusDoc ? subcategoryStatusDoc.isActive !== false : true;
 
+        const subjectCodes = subjects
+            .map((subject) => subject.code)
+            .filter((code) => typeof code === "string" && code.trim().length);
+        const subjectCodeSet = new Set(subjectCodes);
+
+        const reservedBySubject = {};
+
+        if (subjectCodes.length > 0) {
+            const reservations = await Reservation.find(
+                {
+                    confirmation: { $in: ["processed", "confirmed"] },
+                    $or: [
+                        { "classSubjects.slots.code": { $in: subjectCodes } },
+                        { "classSubjects.slots.subject.code": { $in: subjectCodes } },
+                        { "slotSelections.code": { $in: subjectCodes } },
+                        { "slotSelections.subject.code": { $in: subjectCodes } },
+                    ],
+                },
+                "classSubjects slotSelections"
+            ).lean();
+
+            const formatDateKey = (value) => {
+                if (!value) return null;
+                const dateObj = new Date(value);
+                if (Number.isNaN(dateObj.getTime())) return null;
+                return dateObj.toISOString().slice(0, 10);
+            };
+
+            const recordUsage = (slot) => {
+                if (!slot) return;
+                const code =
+                    slot.code ||
+                    (slot.subject && slot.subject.code) ||
+                    null;
+                if (!code || !subjectCodeSet.has(code)) return;
+
+                const dateKey = formatDateKey(slot.date);
+                if (!dateKey) return;
+
+                const slotLabel =
+                    slot.slot ||
+                    slot.time ||
+                    (Number.isFinite(Number(slot.slotIndex))
+                        ? `slot-${Number(slot.slotIndex)}`
+                        : null);
+                if (!slotLabel) return;
+
+                if (!reservedBySubject[code]) reservedBySubject[code] = {};
+                if (!reservedBySubject[code][dateKey])
+                    reservedBySubject[code][dateKey] = {};
+
+                reservedBySubject[code][dateKey][slotLabel] =
+                    (reservedBySubject[code][dateKey][slotLabel] || 0) + 1;
+            };
+
+            reservations.forEach((reservation) => {
+                (reservation.classSubjects || []).forEach((classEntry) => {
+                    (classEntry?.slots || []).forEach(recordUsage);
+                });
+                (reservation.slotSelections || []).forEach(recordUsage);
+            });
+        }
+
         const responseData = subjects.map((subject) => {
             const isSubjectActive = subject.isActive !== false;
+            const reservedSlots =
+                reservedBySubject[subject.code] && subject.code
+                    ? reservedBySubject[subject.code]
+                    : {};
             return {
                 id: subject._id,
                 code: subject.code,
@@ -223,6 +291,7 @@ exports.findCodesByCategory = async (req, res) => {
                 isActive: isSubjectActive,
                 isCategoryActive,
                 isSubcategoryActive,
+                reservedSlots,
             };
         });
 

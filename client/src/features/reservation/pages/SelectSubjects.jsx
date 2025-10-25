@@ -17,11 +17,17 @@ import SubjectSelectionModal from "../components/SubjectModal";
 import { useGetReservationRulesQuery } from "../reservationApiSlice";
 import "../../../css/Reservation/CourseSelection.css";
 
-const buildSlotKey = (dateValue, slotIndex) => {
+const normalizeDateKey = (value) => {
+  if (!value) return null;
+  const dateObj = dayjs(value);
+  if (!dateObj.isValid()) return null;
+  return dateObj.format("YYYY-MM-DD");
+};
+
+const buildSlotKey = (dateValue, slotLabel) => {
   if (!dateValue) return null;
-  const index = Number(slotIndex);
-  if (!Number.isFinite(index)) return null;
-  return `${dateValue}__${index}`;
+  if (!slotLabel || typeof slotLabel !== "string") return null;
+  return `${dateValue}__${slotLabel}`;
 };
 
 const { Paragraph, Title } = Typography;
@@ -158,13 +164,11 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
     if (activeClassIndex === null || activeClassIndex === undefined) return [];
     const classEntry = classSubjects[activeClassIndex];
     const slots = Array.isArray(classEntry?.slots) ? classEntry.slots : [];
-    const seen = new Set();
     const order = [];
     slots.forEach((slot, idx) => {
       if (activeSlotIndex != null && idx === activeSlotIndex) return;
       const code = slot?.subject?.code || slot?.code || null;
-      if (!code || seen.has(code)) return;
-      seen.add(code);
+      if (!code) return;
       const slotIndexValue = Number.isFinite(slot?.slotIndex)
         ? Number(slot.slotIndex)
         : idx;
@@ -180,8 +184,14 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
       slots.forEach((slot) => {
         const code = slot?.subject?.code;
         if (!code) return;
-        const dateValue = slot?.date || slot?.dateValue;
-        const key = buildSlotKey(dateValue, slot?.slotIndex);
+        const dateValue = normalizeDateKey(slot?.date || slot?.dateValue);
+        if (!dateValue) return;
+        const slotLabel =
+          slot?.slot ||
+          slot?.time ||
+          (Number.isFinite(slot?.slotIndex) ? `slot-${slot.slotIndex}` : null);
+        if (!slotLabel) return;
+        const key = buildSlotKey(dateValue, slotLabel);
         if (!key) return;
         const slotIndexValue = Number(slot?.slotIndex);
         if (
@@ -242,20 +252,24 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
   }, [overallSubjectCountsMap]);
 
   const countSubjectUsageForSlot = useCallback(
-    (subjectCode, dateValue, slotIndex, skipIndices = []) => {
-      if (!subjectCode || !dateValue || !Number.isFinite(slotIndex)) return 0;
+    (subjectCode, dateValue, slotLabel, skipLabels = []) => {
+      if (!subjectCode || !dateValue || !slotLabel) return 0;
       let count = 0;
       classSubjects.forEach((classEntry, classIdx) => {
         const slots = Array.isArray(classEntry?.slots) ? classEntry.slots : [];
         slots.forEach((slot) => {
           const slotCode = slot?.subject?.code;
           if (!slotCode || slotCode !== subjectCode) return;
-          if (!slot?.date || slot.date !== dateValue) return;
-          const slotIdxValue = Number(slot?.slotIndex);
-          if (!Number.isFinite(slotIdxValue) || slotIdxValue !== slotIndex) return;
+          const normalizedDate = normalizeDateKey(slot?.date || slot?.dateValue);
+          if (!normalizedDate || normalizedDate !== dateValue) return;
+          const label =
+            slot?.slot ||
+            slot?.time ||
+            (Number.isFinite(slot?.slotIndex) ? `slot-${slot.slotIndex}` : null);
+          if (!label || label !== slotLabel) return;
           if (
             classIdx === activeClassIndex &&
-            skipIndices.includes(slotIdxValue)
+            skipLabels.includes(label)
           ) {
             return;
           }
@@ -322,8 +336,13 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
 
   const activeSlotKey = useMemo(() => {
     if (!activeSlot) return null;
-    const slotIndexValue = activeSlot?.slotIndex;
-    return buildSlotKey(activeSlot?.dateValue, slotIndexValue);
+    const label =
+      activeSlot?.slotLabel ||
+      (Number.isFinite(activeSlot?.slotIndex)
+        ? `slot-${activeSlot.slotIndex}`
+        : null);
+    const dateKey = normalizeDateKey(activeSlot?.dateValue);
+    return buildSlotKey(dateKey, label);
   }, [activeSlot]);
 
   const studentsPerClass = useMemo(() => {
@@ -397,18 +416,35 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
           message.warning("กรุณาเลือกวันที่ให้ครบก่อนเลือกวิชานี้");
           return;
         }
-        const slotIdxValue = Number(definition.slotIndex);
-        if (!Number.isFinite(slotIdxValue)) {
+        const slotLabel =
+          definition?.slotLabel ||
+          (Number.isFinite(definition?.slotIndex)
+            ? `slot-${definition.slotIndex}`
+            : null);
+        if (!slotLabel) {
           message.warning("ไม่สามารถระบุช่วงเวลานี้ได้");
+          return;
+        }
+        const normalizedDate = normalizeDateKey(definition.dateValue);
+        if (!normalizedDate) {
+          message.warning("ไม่สามารถระบุวันที่ของช่วงเวลานี้ได้");
           return;
         }
         const usage = countSubjectUsageForSlot(
           subjectCode,
-          definition.dateValue,
-          slotIdxValue,
-          [slotIdxValue]
+          normalizedDate,
+          slotLabel,
+          [slotLabel]
         );
-        if (usage >= totalClassroomsValue) {
+        const reservedCount = (() => {
+          const reservedSlots = selection.subject?.reservedSlots;
+          if (!reservedSlots) return 0;
+          const reservedByDate = reservedSlots[normalizedDate];
+          if (!reservedByDate) return 0;
+          const value = reservedByDate[slotLabel];
+          return Number.isFinite(value) ? value : 0;
+        })();
+        if (usage + reservedCount >= totalClassroomsValue) {
           const displayDate =
             definition.displayDate || formatBuddhistDate(definition.dateValue);
           message.warning(
@@ -713,6 +749,7 @@ const SubjectSelection = forwardRef(({ onNext, onPrev, embedded = false }, ref) 
         isModalVisible={isModalVisible}
         handleCancel={closeModal}
         onSubjectSelected={handleSubjectSelected}
+        activeSlot={activeSlot}
         classStudentCount={
           activeClassIndex !== null
             ? studentsPerClass[activeClassIndex] || 0

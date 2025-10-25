@@ -34,6 +34,13 @@ import { useNavigate } from "react-router-dom";
 const { Option } = Select;
 const { Title, Text, Paragraph } = Typography;
 
+const normalizeDateKey = (value) => {
+  if (!value) return null;
+  const parsed = dayjs(value);
+  if (!parsed.isValid()) return null;
+  return parsed.format("YYYY-MM-DD");
+};
+
 const formatBuddhistDate = (value) => {
   const date = dayjs(value);
   if (!date.isValid()) return "-";
@@ -212,6 +219,7 @@ const SubjectSelectionModal = ({
         return {
           total: null,
           used: 0,
+          reserved: 0,
           remaining: null,
           isFull: false,
         };
@@ -227,15 +235,35 @@ const SubjectSelectionModal = ({
       const slotUsage = activeSlotKey && subjectUsageBySlot?.[activeSlotKey]
         ? subjectUsageBySlot[activeSlotKey][code] || 0
         : 0;
-      const remaining = total != null ? Math.max(total - slotUsage, 0) : null;
+      let reservedUsage = 0;
+      const activeDateKey = normalizeDateKey(activeSlot?.dateValue);
+      if (subject?.reservedSlots && activeDateKey) {
+        const reservedByDate = subject.reservedSlots[activeDateKey];
+        if (reservedByDate) {
+          const slotLabelKey = activeSlot?.slotLabel;
+          const fallbackKey = Number.isFinite(activeSlot?.slotIndex)
+            ? `slot-${Number(activeSlot.slotIndex)}`
+            : null;
+          const value =
+            (slotLabelKey && reservedByDate[slotLabelKey]) ??
+            (fallbackKey && reservedByDate[fallbackKey]) ??
+            0;
+          if (Number.isFinite(value)) {
+            reservedUsage = value;
+          }
+        }
+      }
+      const combinedUsage = slotUsage + reservedUsage;
+      const remaining = total != null ? Math.max(total - combinedUsage, 0) : null;
       return {
         total,
-        used: slotUsage,
+        used: combinedUsage,
+        reserved: reservedUsage,
         remaining,
         isFull: total != null && remaining <= 0,
       };
     },
-    [subjectUsageBySlot, activeSlotKey]
+    [subjectUsageBySlot, activeSlotKey, activeSlot]
   );
 
   const buildDiscountInfo = useCallback(
