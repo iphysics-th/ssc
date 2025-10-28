@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Layout,
   Menu,
@@ -7,6 +7,8 @@ import {
   Button,
   Drawer,
   Grid,
+  Switch,
+  Alert,
 } from "antd";
 import { useSelector } from "react-redux";
 import Protected from "../../hooks/userProtected";
@@ -26,16 +28,44 @@ import {
   TeamOutlined,
   MenuOutlined,
   CalendarOutlined,
+  BgColorsOutlined,
 } from "@ant-design/icons";
 
 const { Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
+const GREYSCALE_STORAGE_KEY = "ssc:appearance:grayscale";
 
 const Dashboard = () => {
   const auth = useSelector((state) => state.auth);
   const user = typeof auth.user === "object" ? auth.user : null;
   const roles = Array.isArray(user?.roles) ? user.roles : [];
   const isAdmin = roles.includes("admin");
+
+  const [isGreyscale, setIsGreyscale] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem(GREYSCALE_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (isGreyscale) root.classList.add("grayscale-mode");
+    else root.classList.remove("grayscale-mode");
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          GREYSCALE_STORAGE_KEY,
+          String(isGreyscale)
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [isGreyscale]);
 
   const [selectedKey, setSelectedKey] = useState("profile");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -55,11 +85,40 @@ const Dashboard = () => {
         { key: "slide-upload", label: "อัปโหลดสไลด์", icon: <UploadOutlined /> },
         { key: "course-management", label: "จัดการคอร์ส", icon: <SettingOutlined /> },
         { key: "reservation-rules", label: "ตั้งค่าการปิดรับ", icon: <CalendarOutlined /> },
-        { key: "user-management", label: "จัดการผู้ใช้", icon: <TeamOutlined /> }
+        { key: "user-management", label: "จัดการผู้ใช้", icon: <TeamOutlined /> },
+        { key: "appearance", label: "การแสดงผล", icon: <BgColorsOutlined /> }
       );
     }
     return items;
   }, [isAdmin]);
+
+  const AppearancePanel = () => (
+    <div style={{ padding: isMobile ? "16px" : "24px" }}>
+      <Card
+        bordered={false}
+        style={{ maxWidth: 520, borderRadius: 16, boxShadow: "0 10px 25px rgba(15,23,42,0.08)" }}
+        bodyStyle={{ display: "flex", flexDirection: "column", gap: 16 }}
+        title={<Typography.Text strong>โหมดแสดงผล</Typography.Text>}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <Switch checked={isGreyscale} onChange={(checked) => setIsGreyscale(checked)} />
+          <div>
+            <Typography.Text strong>โหมดขาวดำ (Grayscale)</Typography.Text>
+            <br />
+            <Typography.Text type="secondary">
+              ปรับการแสดงผลของเว็บไซต์ทั้งหมดให้เป็นสีขาวดำ เหมาะสำหรับช่วงไว้อาลัยหรือการนำเสนอเฉพาะกิจ
+            </Typography.Text>
+          </div>
+        </div>
+        <Alert
+          type="info"
+          showIcon
+          message="จะแสดงผลบนทุกหน้าของเว็บไซต์"
+          description="การตั้งค่านี้มีผลกับผู้เยี่ยมชมทุกคนทันที และยังคงอยู่หลังจากรีเฟรชหน้าเว็บไซต์"
+        />
+      </Card>
+    </div>
+  );
 
   const handleMenuClick = ({ key }) => {
     setSelectedKey(key);
@@ -226,6 +285,7 @@ const Dashboard = () => {
                 {isAdmin && selectedKey === "user-management" && (
                   <UserManagement />
                 )}
+                {isAdmin && selectedKey === "appearance" && <AppearancePanel />}
               </div>
             </Card>
 
