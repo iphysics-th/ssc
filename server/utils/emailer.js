@@ -62,11 +62,47 @@ function formatBuddhistDate(dateStr) {
   return `${date.getDate()} ${monthName} ${buddhistYear}`;
 }
 
+const sanitizeStudentsPerClass = (list) =>
+  Array.isArray(list)
+    ? list.map((value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+      })
+    : [];
+
+const computeTotalStudents = (studentsPerClass, fallback) => {
+  const totalFromClasses = studentsPerClass.reduce(
+    (acc, value) => acc + (Number.isFinite(value) ? value : 0),
+    0
+  );
+  if (totalFromClasses > 0) {
+    return totalFromClasses;
+  }
+  const fallbackNumeric = Number(fallback);
+  return Number.isFinite(fallbackNumeric) ? fallbackNumeric : 0;
+};
+
+const formatStudentLevelLabel = (range, level) => {
+  if (!range || level == null) return "-";
+  const prefix = range.trim() === "มัธยม" ? "ม." : "ป.";
+  return `${prefix}${level}`;
+};
+
 async function sendEmailNotification(reservation) {
   try {
     const translatedPrefix = translatePrefix(reservation.prefix);
     const translatedStatus = translateStatus(reservation.status);
     const translatedSchoolSize = translateSchoolSize(reservation.schoolSize);
+    const studentsPerClass = sanitizeStudentsPerClass(reservation.studentsPerClass);
+    const totalStudents = computeTotalStudents(
+      studentsPerClass,
+      reservation.numberOfStudents
+    );
+    const studentRange = reservation.studentRange || "-";
+    const studentLevelLabel = formatStudentLevelLabel(
+      reservation.studentRange,
+      reservation.studentLevel
+    );
 
     const hasClassSubjects = Array.isArray(reservation.classSubjects) && reservation.classSubjects.length > 0;
 
@@ -107,8 +143,29 @@ async function sendEmailNotification(reservation) {
       .map((classItem, index) => {
         const classLabel = classItem.classNumber || index + 1;
         const slots = Array.isArray(classItem?.slots) ? classItem.slots : [];
+        const normalizedClassIndex = Number(classLabel);
+        const classIndex =
+          Number.isFinite(normalizedClassIndex) && normalizedClassIndex > 0
+            ? normalizedClassIndex - 1
+            : index;
+        const classStudents = studentsPerClass[classIndex];
+        const classStudentCount =
+          Number.isFinite(classStudents) && classStudents > 0 ? classStudents : null;
+        const classRange = classItem.studentRange || studentRange;
+        const slotLevelLabel =
+          slots.find((slot) => slot.levelLabel)?.levelLabel ||
+          slots.find((slot) => slot.level)?.level ||
+          null;
+        const classLevelLabel =
+          classItem.levelLabel || classItem.level || slotLevelLabel || studentLevelLabel;
+        const headerExtras = [
+          classStudentCount ? `นักเรียน ${classStudentCount} คน` : null,
+          classRange && classRange !== "-" ? `ช่วงชั้น ${classRange}` : null,
+          classLevelLabel && classLevelLabel !== "-" ? `ระดับ ${classLevelLabel}` : null,
+        ].filter(Boolean);
+        const headerLine = [`- ห้อง ${classLabel}`, ...headerExtras].join(" • ");
         if (!slots.length) {
-          return `- ห้อง ${classLabel}: ไม่พบรายวิชา`;
+          return `${headerLine}: ไม่พบรายวิชา`;
         }
 
         const slotLines = slots.map((slot) => {
@@ -126,7 +183,7 @@ async function sendEmailNotification(reservation) {
           return `  • ${dateLabel} • ${slotLabel} • ${subjectName}${codeValue ? ` (${codeValue})` : ''}${levelLabel}`;
         });
 
-        return [`- ห้อง ${classLabel}:`, ...slotLines].join('\n');
+        return [headerLine + ":", ...slotLines].join('\n');
       })
       .join('\n');
 
@@ -144,10 +201,10 @@ async function sendEmailNotification(reservation) {
 อีเมล: ${reservation.mail}
 โรงเรียน: ${reservation.school}
 ขนาดโรงเรียน: ${translatedSchoolSize}
-จำนวนนักเรียนที่เข้าอบรม: ${reservation.numberOfStudents} คน
+จำนวนนักเรียนที่เข้าอบรม: ${totalStudents} คน
 จำนวนห้องเรียน: ${reservation.numberOfClasses || (classEntries.length || 1)} ห้อง
-ช่วงชั้น: ${reservation.studentRange}
-ระดับชั้น: ${reservation.studentRange === 'มัธยม' ? 'ม.' : 'ป.'}${reservation.studentLevel}
+ช่วงชั้น: ${studentRange}
+ระดับชั้น: ${studentLevelLabel}
 จำนวนวัน: ${reservation.numberOfDays} วัน
 
 📆 รายละเอียดการจอง:

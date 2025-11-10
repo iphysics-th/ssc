@@ -39,6 +39,32 @@ const formatMonthYear = (value) => {
   return `${monthName} ${buddhistYear}`;
 };
 
+const sanitizeStudentsPerClass = (list) =>
+  Array.isArray(list)
+    ? list.map((value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+      })
+    : [];
+
+const computeTotalStudents = (studentsPerClass, fallback) => {
+  const totalFromClasses = studentsPerClass.reduce(
+    (acc, value) => acc + (Number.isFinite(value) ? value : 0),
+    0
+  );
+  if (totalFromClasses > 0) {
+    return totalFromClasses;
+  }
+  const fallbackNumeric = Number(fallback);
+  return Number.isFinite(fallbackNumeric) ? fallbackNumeric : 0;
+};
+
+const formatStudentLevelLabel = (range, level) => {
+  if (!range || level == null) return "-";
+  const prefix = range.trim() === "มัธยม" ? "ม." : "ป.";
+  return `${prefix}${level}`;
+};
+
 const confirmationDotColorMap = {
   received: "#B0B0B0",
   processed: "#FADB14",
@@ -232,6 +258,18 @@ const UserReservations = () => {
               const style = statusStyleMap[status] || statusStyleMap.received;
               const statusColor = confirmationDotColorMap[status] || "#999";
               const statusText = translateConfirmationStatus(status);
+              const studentsPerClass = sanitizeStudentsPerClass(
+                reservation.studentsPerClass
+              );
+              const totalStudents = computeTotalStudents(
+                studentsPerClass,
+                reservation.numberOfStudents
+              );
+              const studentRange = reservation.studentRange || "-";
+              const studentLevelLabel = formatStudentLevelLabel(
+                reservation.studentRange,
+                reservation.studentLevel
+              );
 
               return (
                 <Card
@@ -263,6 +301,15 @@ const UserReservations = () => {
 
                   <Text strong>วันที่อบรม: </Text>
                   <Text>{selectedDates.join(", ") || "-"}</Text>
+                  <br />
+                  <Text strong>จำนวนนักเรียน: </Text>
+                  <Text>{totalStudents > 0 ? `${totalStudents} คน` : "-"}</Text>
+                  <br />
+                  <Text strong>ช่วงชั้น: </Text>
+                  <Text>{studentRange}</Text>
+                  <br />
+                  <Text strong>ระดับชั้น: </Text>
+                  <Text>{studentLevelLabel}</Text>
                   <Divider style={{ margin: "10px 0" }} />
 
                   <div
@@ -343,6 +390,16 @@ const ReservationDetailCard = ({
   const style = statusStyleMap[status] || statusStyleMap.received;
   const statusColor = confirmationDotColorMap[status] || "#999";
   const statusText = translateConfirmationStatus(status);
+  const studentsPerClass = sanitizeStudentsPerClass(reservation.studentsPerClass);
+  const totalStudents = computeTotalStudents(
+    studentsPerClass,
+    reservation.numberOfStudents
+  );
+  const studentRange = reservation.studentRange || "-";
+  const studentLevelLabel = formatStudentLevelLabel(
+    reservation.studentRange,
+    reservation.studentLevel
+  );
 
   // --- new global counter for discount calculation ---
   const globalSubjectSelectionCounts = new Map();
@@ -412,11 +469,23 @@ const ReservationDetailCard = ({
       <br />
       <Text strong>จำนวนห้องเรียน:</Text>{" "}
       <Text>{reservation.numberOfClasses || 1}</Text>
+      <br />
+      <Text strong>จำนวนนักเรียนทั้งหมด:</Text>{" "}
+      <Text>{totalStudents > 0 ? `${totalStudents} คน` : "-"}</Text>
+      <br />
+      <Text strong>ช่วงชั้น:</Text> <Text>{studentRange}</Text>
+      <br />
+      <Text strong>ระดับชั้น:</Text> <Text>{studentLevelLabel}</Text>
 
       {/* CLASS DETAILS */}
       {classSubjects.map((cls, i) => {
         const classNumber = cls.classNumber || i + 1;
         const slots = cls.slots || [];
+        const classStudents = studentsPerClass[classNumber - 1];
+        const classStudentCount =
+          Number.isFinite(classStudents) && classStudents > 0 ? classStudents : null;
+        const classRange = cls.studentRange || studentRange;
+        const classLevelLabel = cls.levelLabel || cls.level || studentLevelLabel;
         const uniqueSubjects = {};
 
         // --- build unique subject map (like SummaryPage) ---
@@ -504,6 +573,17 @@ const ReservationDetailCard = ({
               <Title level={4} style={{ margin: 0, color: "#0f172a" }}>
                 ห้องเรียนที่ {classNumber}
               </Title>
+              <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {classStudentCount ? (
+                  <Tag color="green">นักเรียน {classStudentCount} คน</Tag>
+                ) : null}
+                {classRange && classRange !== "-" ? (
+                  <Tag color="cyan">ช่วงชั้น {classRange}</Tag>
+                ) : null}
+                {classLevelLabel && classLevelLabel !== "-" ? (
+                  <Tag color="blue">ระดับ {classLevelLabel}</Tag>
+                ) : null}
+              </div>
             </div>
 
             {/* Subject Cards */}
