@@ -17,6 +17,9 @@ import {
 } from "../../features/reservation/reservationApiSlice";
 import useDiscountValue from "../../hooks/useDiscountValue";
 
+const DEFAULT_SECOND_SUBJECT_DISCOUNT =
+  Number(process.env.REACT_APP_DEFAULT_DISCOUNT) || 4000;
+
 dayjs.locale("th");
 const { Text, Title } = Typography;
 
@@ -78,7 +81,10 @@ const UserReservations = () => {
       isError: isFallbackError,
     },
   ] = useLazyGetReservationsByEmailQuery();
-  const { discountValue: secondSubjectDiscount } = useDiscountValue();
+  const discountConfig = useDiscountValue();
+  const secondSubjectDiscount = Number.isFinite(discountConfig.discountValue)
+    ? discountConfig.discountValue
+    : DEFAULT_SECOND_SUBJECT_DISCOUNT;
 
   const [hasTriggeredFallback, setHasTriggeredFallback] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -308,6 +314,7 @@ const UserReservations = () => {
           <ReservationDetailCard
             reservation={selectedReservation}
             currency={currency}
+            secondSubjectDiscount={secondSubjectDiscount}
           />
         )}
       </Modal>
@@ -318,9 +325,11 @@ const UserReservations = () => {
 /* =====================================================
    Reservation Detail Component (inside Modal)
    ===================================================== */
-const ReservationDetailCard = ({ reservation, currency }) => {
-  const { Text, Title } = Typography;
-
+const ReservationDetailCard = ({
+  reservation,
+  currency,
+  secondSubjectDiscount = DEFAULT_SECOND_SUBJECT_DISCOUNT,
+}) => {
   const selectedDates = Array.isArray(reservation.selectedDates)
     ? reservation.selectedDates.map((d) => formatBuddhistDate(d))
     : [];
