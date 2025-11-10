@@ -15,6 +15,7 @@ import {
   useGetMyReservationsQuery,
   useLazyGetReservationsByEmailQuery,
 } from "../../features/reservation/reservationApiSlice";
+import useDiscountValue from "../../hooks/useDiscountValue";
 
 dayjs.locale("th");
 const { Text, Title } = Typography;
@@ -77,6 +78,7 @@ const UserReservations = () => {
       isError: isFallbackError,
     },
   ] = useLazyGetReservationsByEmailQuery();
+  const { discountValue: secondSubjectDiscount } = useDiscountValue();
 
   const [hasTriggeredFallback, setHasTriggeredFallback] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -454,7 +456,9 @@ const ReservationDetailCard = ({ reservation, currency }) => {
           const perClassEligible = i >= 1 || idx >= 1;
           const repeatEligible = globalPriorCount >= 1;
           const discountEligible = perClassEligible || repeatEligible;
-          const discountAmount = discountEligible ? Math.min(4000, base) : 0;
+          const discountAmount = discountEligible
+            ? Math.min(secondSubjectDiscount, base)
+            : 0;
 
           const discountedBase = Math.max(0, base - discountAmount);
           const total = discountedBase;

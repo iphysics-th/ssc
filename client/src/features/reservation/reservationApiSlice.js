@@ -184,6 +184,21 @@ export const reservationApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["ReservationRules"],
     }),
+    getDiscountConfig: builder.query({
+      query: () => ({
+        url: "api/config/discount",
+        method: "GET",
+      }),
+      providesTags: ["Settings"],
+    }),
+    updateDiscountConfig: builder.mutation({
+      query: ({ value }) => ({
+        url: "api/admin/config/discount",
+        method: "PUT",
+        body: { value },
+      }),
+      invalidatesTags: ["Settings"],
+    }),
   }),
 });
 
@@ -217,4 +232,6 @@ export const {
   useGetReservationRulesAdminQuery,
   useCreateReservationRuleMutation,
   useDeleteReservationRuleMutation,
+  useGetDiscountConfigQuery,
+  useUpdateDiscountConfigMutation,
 } = reservationApiSlice;

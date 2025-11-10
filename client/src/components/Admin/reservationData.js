@@ -18,6 +18,7 @@ import {
   useGetReservationTableQuery,
   useUpdateReservationStatusMutation,
 } from "../../features/reservation/reservationApiSlice";
+import useDiscountValue from "../../hooks/useDiscountValue";
 
 dayjs.locale("th");
 const { Text, Title } = Typography;
@@ -87,6 +88,7 @@ export default function AdminReservations() {
     limit: 1000,
   });
   const [updateReservationStatus] = useUpdateReservationStatusMutation();
+  const { discountValue } = useDiscountValue();
 
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -370,7 +372,9 @@ export default function AdminReservations() {
               const perClassEligible = i >= 1 || idx >= 1;
               const repeatEligible = globalPriorCount >= 1;
               const discountEligible = perClassEligible || repeatEligible;
-              const discountAmount = discountEligible ? Math.min(4000, base) : 0;
+              const discountAmount = discountEligible
+                ? Math.min(discountValue, base)
+                : 0;
 
               const discountedBase = Math.max(0, base - discountAmount);
               const total = discountedBase;

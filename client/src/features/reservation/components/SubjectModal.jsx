@@ -30,6 +30,7 @@ import {
   useLazyGetSubjectsBySubcategoryQuery,
 } from "../reservationApiSlice";
 import { useNavigate } from "react-router-dom";
+import useDiscountValue from "../../../hooks/useDiscountValue";
 
 const { Option } = Select;
 const { Title, Text, Paragraph } = Typography;
@@ -74,6 +75,7 @@ const SubjectSelectionModal = ({
   const [drawerVisible, setDrawerVisible] = useState(false);
   const backendUrl = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "");
   const navigate = useNavigate();
+  const { discountValue } = useDiscountValue();
 
   const resolveImageUrl = (imagePath) => {
     if (!imagePath || typeof imagePath !== "string") return null;
@@ -283,7 +285,9 @@ const SubjectSelectionModal = ({
         totalClassrooms > 2 &&
         overallCount >= 1;
       const discountEligible = perClassEligible || repeatEligible;
-      const discountAmount = discountEligible ? Math.min(4000, basePrice) : 0;
+      const discountAmount = discountEligible
+        ? Math.min(discountValue, basePrice)
+        : 0;
       const discountedPrice = Math.max(0, basePrice - discountAmount);
       return {
         basePrice,
@@ -294,7 +298,7 @@ const SubjectSelectionModal = ({
         repeatEligible,
       };
     },
-    [isFirstClass, hasPriorSubjectInClass, overallSubjectCounts]
+    [isFirstClass, hasPriorSubjectInClass, overallSubjectCounts, discountValue]
   );
 
   const canConfirmSelection = useMemo(() => {

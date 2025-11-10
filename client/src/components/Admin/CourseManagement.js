@@ -33,6 +33,8 @@ import {
   useDeleteSubjectMutation,
   useUpdateCategoryStatusMutation,
   useUpdateSubcategoryStatusMutation,
+  useGetDiscountConfigQuery,
+  useUpdateDiscountConfigMutation,
 } from "../../features/reservation/reservationApiSlice";
 import {
   SaveOutlined,
@@ -78,6 +80,7 @@ const CourseManagement = () => {
   const [createUploadFileList, setCreateUploadFileList] = useState([]);
   const [createImageFile, setCreateImageFile] = useState(null);
   const [currentSubjectActive, setCurrentSubjectActive] = useState(true);
+  const [discountInput, setDiscountInput] = useState(4000);
 
   const backendUrl = process.env.REACT_APP_BACKEND_URL || "";
   const [form] = Form.useForm();
@@ -106,6 +109,12 @@ const CourseManagement = () => {
     useUpdateCategoryStatusMutation();
   const [updateSubcategoryStatus, { isLoading: isUpdatingSubcategoryStatus }] =
     useUpdateSubcategoryStatusMutation();
+  const {
+    data: discountConfig,
+    isFetching: isDiscountLoading,
+  } = useGetDiscountConfigQuery();
+  const [updateDiscountConfig, { isLoading: isUpdatingDiscount }] =
+    useUpdateDiscountConfigMutation();
 
   const normalizeCourses = (list = []) =>
     list.map((item) => ({
@@ -140,6 +149,49 @@ const CourseManagement = () => {
     setImageFile(null);
     setCurrentSubjectActive(true);
   };
+
+  useEffect(() => {
+    if (discountConfig?.value != null) {
+      const parsedValue = Number(discountConfig.value);
+      if (Number.isFinite(parsedValue)) {
+        setDiscountInput(parsedValue);
+      }
+    }
+  }, [discountConfig]);
+
+  const handleDiscountInputChange = (value) => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      setDiscountInput(value);
+    } else if (value === null) {
+      setDiscountInput(0);
+    }
+  };
+
+  const handleDiscountSave = async () => {
+    const value = Number(discountInput);
+    if (!Number.isFinite(value) || value < 0) {
+      message.error("กรุณาระบุจำนวนเงินส่วนลดที่ถูกต้อง");
+      return;
+    }
+    try {
+      await updateDiscountConfig({ value }).unwrap();
+      message.success("บันทึกจำนวนส่วนลดเรียบร้อยแล้ว");
+    } catch (error) {
+      console.error("Failed to update discount value:", error);
+      message.error(error?.data?.message || "ไม่สามารถบันทึกจำนวนส่วนลดได้");
+    }
+  };
+
+  const currentDiscountValue = Number(discountConfig?.value);
+  const hasDiscountChanged = Number.isFinite(currentDiscountValue)
+    ? discountInput !== currentDiscountValue
+    : Number.isFinite(discountInput);
+  const isDiscountSaveDisabled =
+    isDiscountLoading ||
+    isUpdatingDiscount ||
+    !Number.isFinite(discountInput) ||
+    discountInput < 0 ||
+    !hasDiscountChanged;
 
   const clearCreateUploadPreview = () => {
     createUploadFileList.forEach((file) => {
@@ -816,6 +868,40 @@ const CourseManagement = () => {
       <Text type="secondary">
         เลือกระดับการเรียน กลุ่มวิชา และหัวข้อย่อยเพื่อค้นหาและจัดการรายละเอียดคอร์ส
       </Text>
+
+      <Card
+        title="ตั้งค่าจำนวนส่วนลดวิชาที่สอง"
+        bordered
+        style={{ marginTop: 16 }}
+        loading={isDiscountLoading}
+      >
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          <Space align="center" size={12} wrap>
+            <Text strong>ส่วนลด</Text>
+            <InputNumber
+              min={0}
+              step={100}
+              value={discountInput}
+              onChange={handleDiscountInputChange}
+              style={{ width: 180 }}
+              disabled={isDiscountLoading || isUpdatingDiscount}
+            />
+            <Text>บาท</Text>
+            <Button
+              type="primary"
+              icon={<SaveOutlined />}
+              onClick={handleDiscountSave}
+              loading={isUpdatingDiscount}
+              disabled={isDiscountSaveDisabled}
+            >
+              บันทึก
+            </Button>
+          </Space>
+          <Text type="secondary">
+            ระบบจะใช้จำนวนเงินนี้เป็นส่วนลดเมื่อมีการเลือกวิชาที่สองหรือมากกว่า
+          </Text>
+        </Space>
+      </Card>
 
       <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
         <Col xs={24} lg={9}>

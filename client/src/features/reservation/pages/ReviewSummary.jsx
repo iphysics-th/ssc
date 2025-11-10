@@ -33,6 +33,7 @@ import "dayjs/locale/th";
 import { useCreateReservationMutation } from "../reservationApiSlice";
 import { groupClassSubjects } from "../utils/classGrouping";
 import "../../../css/Reservation/SummaryPage.css";
+import useDiscountValue from "../../../hooks/useDiscountValue";
 
 dayjs.locale("th");
 const { Title, Text } = Typography;
@@ -68,6 +69,7 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
   const [createReservation, { isLoading: isSaving }] =
     useCreateReservationMutation();
   const navigate = useNavigate();
+  const { discountValue } = useDiscountValue();
 
   const userId = authUser?.id || authUser?._id || null;
   const {
@@ -228,7 +230,9 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
           globalPriorCount >= 1;
 
         const discountEligible = perClassEligible || repeatEligible;
-        const discountAmount = discountEligible ? Math.min(4000, base) : 0;
+        const discountAmount = discountEligible
+          ? Math.min(discountValue, base)
+          : 0;
 
         totals.base += base;
         totals.discount += discountAmount;
@@ -244,6 +248,7 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
     classStudentCounts,
     fallbackClassStudents,
     getUniqueSubjects,
+    discountValue,
   ]);
 
   const overallNetBase = overallTotals.base - overallTotals.discount;
@@ -411,7 +416,7 @@ const SummaryPage = forwardRef(({ onNext, onPrev, embedded = false }, ref) => {
 
                 const discountEligible = perClassEligible || repeatEligible;
                 const discountAmount = discountEligible
-                  ? Math.min(4000, base)
+                  ? Math.min(discountValue, base)
                   : 0;
                 const discountedBase = Math.max(0, base - discountAmount);
                 const total = discountedBase + overflowCharge;
